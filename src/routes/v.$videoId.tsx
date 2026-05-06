@@ -195,9 +195,9 @@ function WatchPage() {
 
   return (
     <AppShell>
-      <div className="max-w-6xl mx-auto px-4 py-6 grid lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <div>
-          <div className="relative rounded-3xl overflow-hidden bg-black aspect-video shadow-[var(--shadow-elev)]">
+          <div className="relative rounded-3xl overflow-hidden bg-black h-[80vh] shadow-[var(--shadow-elev)]">
             <video
               ref={videoRef}
               key={src}
@@ -283,7 +283,7 @@ function WatchPage() {
           <h3 className="font-display text-xl font-semibold mb-3 flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" /> {video.replies_count} {video.replies_count === 1 ? "reply" : "replies"}
           </h3>
-          <div className="space-y-2 max-h-[calc(100vh-220px)] overflow-y-auto pr-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {replies.length === 0 && (
               <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
             )}
@@ -320,17 +320,16 @@ function WatchPage() {
                     startIndex: 0,
                   });
                 }}
-                className={`w-full text-left rounded-2xl border p-3 flex items-center gap-3 transition ${activeReply?.id === r.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 bg-card"}`}
+                className={`group relative aspect-[9/16] overflow-hidden rounded-2xl border bg-black transition ${activeReply?.id === r.id ? "border-primary" : "border-border hover:border-primary/60"}`}
               >
-                <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-black flex-shrink-0">
-                  <video src={publicUrl(r.storage_path) + "#t=0.1"} muted className="h-full w-full object-cover" preload="metadata" />
-                  <div className="absolute inset-0 grid place-items-center bg-black/30">
-                    <Play className="h-5 w-5 text-white" fill="white" />
-                  </div>
+                <video src={publicUrl(r.storage_path) + "#t=0.1"} muted preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                <div className="absolute inset-0 grid place-items-center">
+                  <Play className="h-8 w-8 text-white drop-shadow" fill="white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">@{r.profiles?.username ?? "unknown"}</p>
-                  <p className="text-xs text-muted-foreground">{formatDuration(r.duration_seconds)}</p>
+                <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-left">
+                  <p className="font-semibold text-xs truncate">@{r.profiles?.username ?? "unknown"}</p>
+                  <p className="text-[10px] opacity-80">{formatDuration(r.duration_seconds)}</p>
                 </div>
               </button>
             ))}
