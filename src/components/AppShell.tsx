@@ -19,9 +19,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="font-display text-2xl font-bold tracking-tight">WOPLA</span>
           </Link>
           <nav className="flex items-center gap-1">
-            <Link to="/" className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeOptions={{ exact: true }} activeProps={{ className: "text-primary" }}>
-              <Home className="h-4 w-4" /> <span className="hidden sm:inline">Home</span>
-            </Link>
+            {user && profile ? (
+              <Link to="/u/$username" params={{ username: profile.username }} className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeProps={{ className: "text-primary" }}>
+                <Home className="h-4 w-4" /> <span className="hidden sm:inline">Home</span>
+              </Link>
+            ) : (
+              <Link to="/" className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeOptions={{ exact: true }} activeProps={{ className: "text-primary" }}>
+                <Home className="h-4 w-4" /> <span className="hidden sm:inline">Home</span>
+              </Link>
+            )}
             <Link to="/search" className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeProps={{ className: "text-primary" }}>
               <Search className="h-4 w-4" /> <span className="hidden sm:inline">Search</span>
             </Link>
@@ -30,11 +36,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Button variant="default" size="sm" className="ml-2 rounded-full font-semibold" onClick={() => navigate({ to: "/record" })}>
                   <Video className="h-4 w-4 mr-1" /> Post
                 </Button>
-                {profile && (
-                  <Link to="/u/$username" params={{ username: profile.username }} className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2">
-                    <UserIcon className="h-4 w-4" /> <span className="hidden sm:inline">@{profile.username}</span>
-                  </Link>
-                )}
                 <Button variant="ghost" size="icon" onClick={() => signOut()} title="Sign out">
                   <LogOut className="h-4 w-4" />
                 </Button>
