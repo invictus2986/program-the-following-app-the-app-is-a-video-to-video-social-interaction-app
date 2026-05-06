@@ -1,0 +1,99 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/auth")({
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate({ to: "/" });
+  }, [user, navigate]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      if (mode === "signup") {
+        const cleanU = username.toLowerCase().replace(/[^a-z0-9_]/g, "");
+        if (cleanU.length < 3) {
+          toast.error("Username must be at least 3 characters (letters, numbers, _)");
+          setBusy(false);
+          return;
+        }
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: { username: cleanU, display_name: cleanU },
+          },
+        });
+        if (error) throw error;
+        toast.success("Account created! Check your email to verify.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        toast.success("Welcome back");
+      }
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AppShell>
+      <div className="max-w-md mx-auto px-4 py-16">
+        <div className="rounded-3xl bg-card border border-border p-8 shadow-[var(--shadow-elev)]">
+          <h1 className="text-3xl font-display font-bold mb-2">{mode === "signin" ? "Welcome back" : "Join echo"}</h1>
+          <p className="text-muted-foreground text-sm mb-6">
+            {mode === "signin" ? "Sign in to post and reply with video." : "Pick a handle. The world will see it."}
+          </p>
+          <form onSubmit={submit} className="space-y-4">
+            {mode === "signup" && (
+              <div>
+                <Label htmlFor="u">Username</Label>
+                <Input id="u" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="yourhandle" required />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="e">Email</Label>
+              <Input id="e" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="p">Password</Label>
+              <Input id="p" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+            </div>
+            <Button type="submit" disabled={busy} className="w-full rounded-full font-semibold">
+              {busy ? "..." : mode === "signin" ? "Sign in" : "Create account"}
+            </Button>
+          </form>
+          <button
+            type="button"
+            className="mt-4 text-sm text-muted-foreground hover:text-foreground w-full text-center"
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+          >
+            {mode === "signin" ? "No account? Sign up" : "Have an account? Sign in"}
+          </button>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
