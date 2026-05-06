@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart, MessageSquare, UserCheck, UserPlus, User, X, ChevronUp, ChevronDown, Volume2, VolumeX } from "lucide-react";
+import { Heart, MessageSquare, UserCheck, UserPlus, User, X, ChevronUp, ChevronDown, Volume2, VolumeX, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount, publicUrl } from "@/lib/video";
@@ -166,7 +166,13 @@ function PlayerOverlay({ source, onClose }: { source: PlayerSource; onClose: () 
             ref={(el) => { slideRefs.current[i] = el; }}
             className="h-screen w-full snap-start snap-always"
           >
-            <Slide video={v} active={i === index} muted={muted} onClose={onClose} />
+            <Slide
+              video={v}
+              active={i === index}
+              muted={muted}
+              onClose={onClose}
+              threadVideoId={source.kind === "replies" ? source.parentVideoId : v.id}
+            />
           </div>
         ))}
       </div>
@@ -174,7 +180,7 @@ function PlayerOverlay({ source, onClose }: { source: PlayerSource; onClose: () 
   );
 }
 
-function Slide({ video, active, muted, onClose }: { video: FeedVideo; active: boolean; muted: boolean; onClose: () => void }) {
+function Slide({ video, active, muted, onClose, threadVideoId }: { video: FeedVideo; active: boolean; muted: boolean; onClose: () => void; threadVideoId: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -270,6 +276,11 @@ function Slide({ video, active, muted, onClose }: { video: FeedVideo; active: bo
     navigate({ to: "/u/$username", params: { username: video.profiles.username } });
   };
 
+  const openThread = () => {
+    onClose();
+    navigate({ to: "/v/$videoId", params: { videoId: threadVideoId } });
+  };
+
   return (
     <div className="relative h-full w-full grid place-items-center">
       <video
@@ -339,6 +350,12 @@ function Slide({ video, active, muted, onClose }: { video: FeedVideo; active: bo
                 <MessageSquare className="h-6 w-6" />
               </div>
               <span className="text-xs font-semibold">{formatCount(video.replies_count)}</span>
+            </button>
+            <button onClick={openThread} className="flex flex-col items-center gap-1">
+              <div className="h-12 w-12 grid place-items-center rounded-full bg-white/15 text-white backdrop-blur hover:scale-105 transition">
+                <Layers className="h-6 w-6" />
+              </div>
+              <span className="text-[10px] font-semibold">Thread</span>
             </button>
           </div>
         </div>
