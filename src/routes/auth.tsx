@@ -20,6 +20,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -37,12 +38,23 @@ function AuthPage() {
           setBusy(false);
           return;
         }
+        const cleanDisplay = displayName.trim();
+        if (cleanDisplay.length < 1) {
+          toast.error("Please enter a display name");
+          setBusy(false);
+          return;
+        }
+        if (cleanDisplay.length > 50) {
+          toast.error("Display name must be 50 characters or less");
+          setBusy(false);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: { username: cleanU, display_name: cleanU },
+            data: { username: cleanU, display_name: cleanDisplay },
           },
         });
         if (error) throw error;
@@ -92,6 +104,12 @@ function AuthPage() {
               <div>
                 <Label htmlFor="u">Username</Label>
                 <Input id="u" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="yourhandle" required />
+              </div>
+            )}
+            {mode === "signup" && (
+              <div>
+                <Label htmlFor="dn">Display name</Label>
+                <Input id="dn" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" required maxLength={50} />
               </div>
             )}
             <div>
