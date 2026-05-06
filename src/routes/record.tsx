@@ -188,7 +188,28 @@ function RecordPage() {
           {stage !== "review" ? (
             <video ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover scale-x-[-1]" />
           ) : (
-            <video ref={previewRef} src={previewUrl ?? undefined} controls playsInline className="absolute inset-0 h-full w-full object-contain bg-black" />
+            <video
+              ref={previewRef}
+              src={previewUrl ?? undefined}
+              controls
+              playsInline
+              preload="metadata"
+              onLoadedMetadata={(e) => {
+                // MediaRecorder webm blobs report duration=Infinity. Force the
+                // browser to scan to the end so it computes a real duration
+                // and the preview becomes playable/seekable.
+                const v = e.currentTarget;
+                if (v.duration === Infinity || isNaN(v.duration)) {
+                  const onTimeUpdate = () => {
+                    v.removeEventListener("timeupdate", onTimeUpdate);
+                    v.currentTime = 0;
+                  };
+                  v.addEventListener("timeupdate", onTimeUpdate);
+                  v.currentTime = 1e9;
+                }
+              }}
+              className="absolute inset-0 h-full w-full object-contain bg-black"
+            />
           )}
           {stage === "recording" && (
             <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-destructive/90 text-destructive-foreground text-sm font-bold">
