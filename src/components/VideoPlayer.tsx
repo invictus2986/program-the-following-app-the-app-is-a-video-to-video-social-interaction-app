@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart, MessageSquare, Repeat2, UserCheck, UserPlus, X, ChevronUp, ChevronDown, Volume2, VolumeX } from "lucide-react";
+import { Heart, MessageSquare, UserCheck, UserPlus, User, X, ChevronUp, ChevronDown, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount, publicUrl } from "@/lib/video";
@@ -326,28 +326,17 @@ function Slide({ video, active, muted, onClose }: { video: FeedVideo; active: bo
               </div>
               <span className="text-xs font-semibold">{formatCount(likeCount)}</span>
             </button>
-            <button onClick={goReply} className="flex flex-col items-center gap-1">
+            <button onClick={openProfile} className="flex flex-col items-center gap-1">
               <div className="h-12 w-12 grid place-items-center rounded-full bg-white/15 text-white backdrop-blur hover:scale-105 transition">
-                <Repeat2 className="h-6 w-6" />
+                <User className="h-6 w-6" />
               </div>
-              <span className="text-xs font-semibold">{formatCount(video.replies_count)}</span>
+              <span className="text-[10px] font-semibold">Profile</span>
             </button>
-            <button
-              onClick={() => {
-                if (!user) {
-                  onClose();
-                  navigate({ to: "/auth" });
-                  return;
-                }
-                onClose();
-                navigate({ to: "/record", search: { replyTo: video.id } });
-              }}
-              className="flex flex-col items-center gap-1"
-            >
+            <button onClick={goReply} className="flex flex-col items-center gap-1">
               <div className="h-12 w-12 grid place-items-center rounded-full bg-white/15 text-white backdrop-blur hover:scale-105 transition">
                 <MessageSquare className="h-6 w-6" />
               </div>
-              <span className="text-[10px] font-semibold">Reply</span>
+              <span className="text-xs font-semibold">{formatCount(video.replies_count)}</span>
             </button>
           </div>
         </div>
