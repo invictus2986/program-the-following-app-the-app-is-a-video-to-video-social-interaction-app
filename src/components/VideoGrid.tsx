@@ -16,7 +16,17 @@ export type FeedVideo = {
   profiles: { username: string; display_name: string | null; avatar_url: string | null } | null;
 };
 
-export function VideoGrid({ videos, loading, emptyHint }: { videos: FeedVideo[]; loading?: boolean; emptyHint?: string }) {
+export function VideoGrid({
+  videos,
+  loading,
+  emptyHint,
+  onPlay,
+}: {
+  videos: FeedVideo[];
+  loading?: boolean;
+  emptyHint?: string;
+  onPlay?: (index: number) => void;
+}) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -35,21 +45,19 @@ export function VideoGrid({ videos, loading, emptyHint }: { videos: FeedVideo[];
   }
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-      {videos.map((v) => (
-        <VideoCard key={v.id} v={v} />
+      {videos.map((v, i) => (
+        <VideoCard key={v.id} v={v} onPlay={onPlay ? () => onPlay(i) : undefined} />
       ))}
     </div>
   );
 }
 
-function VideoCard({ v }: { v: FeedVideo }) {
+function VideoCard({ v, onPlay }: { v: FeedVideo; onPlay?: () => void }) {
   const src = publicUrl(v.storage_path);
-  return (
-    <Link
-      to="/v/$videoId"
-      params={{ videoId: v.id }}
-      className="group relative aspect-[9/16] overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/60 transition shadow-[var(--shadow-elev)]"
-    >
+  const className =
+    "group relative aspect-[9/16] overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/60 transition shadow-[var(--shadow-elev)] text-left";
+  const inner = (
+    <>
       <video
         src={src + "#t=0.1"}
         muted
@@ -82,6 +90,18 @@ function VideoCard({ v }: { v: FeedVideo }) {
           <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {formatCount(v.replies_count)}</span>
         </div>
       </div>
+    </>
+  );
+  if (onPlay) {
+    return (
+      <button type="button" onClick={onPlay} className={className}>
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <Link to="/v/$videoId" params={{ videoId: v.id }} className={className}>
+      {inner}
     </Link>
   );
 }
