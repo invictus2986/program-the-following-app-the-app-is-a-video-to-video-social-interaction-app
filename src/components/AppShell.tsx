@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="h-9 w-9 rounded-2xl bg-[image:var(--gradient-mint)] shadow-[var(--shadow-glow)] grid place-items-center">
               <Video className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="font-display text-2xl font-bold tracking-tight">echo</span>
+            <span className="font-display text-2xl font-bold tracking-tight">WOPLA</span>
           </Link>
           <nav className="flex items-center gap-1">
             <Link to="/" className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeOptions={{ exact: true }} activeProps={{ className: "text-primary" }}>
