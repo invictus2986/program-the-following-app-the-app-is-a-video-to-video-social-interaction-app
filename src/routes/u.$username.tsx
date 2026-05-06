@@ -217,7 +217,15 @@ function ProfilePage() {
   return (
     <AppShell>
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="rounded-3xl bg-card border border-border p-6 flex items-center gap-5 shadow-[var(--shadow-elev)]">
+        <div className="relative rounded-3xl bg-card border border-border p-6 flex items-center gap-5 shadow-[var(--shadow-elev)]">
+          {user && profile && user.id === profile.user_id && (
+            <button
+              onClick={openEdit}
+              className="absolute top-4 right-4 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Edit profile
+            </button>
+          )}
           <div className="h-20 w-20 rounded-full bg-[image:var(--gradient-mint)] grid place-items-center text-primary-foreground font-bold text-3xl">
             {(profile?.display_name || profile?.username || "?").slice(0, 1).toUpperCase()}
           </div>
@@ -234,11 +242,6 @@ function ProfilePage() {
           {user && profile && user.id !== profile.user_id && (
             <Button onClick={toggleFollow} variant={following ? "outline" : "default"} className="rounded-full">
               {following ? <><UserCheck className="h-4 w-4 mr-1" /> Following</> : <><UserPlus className="h-4 w-4 mr-1" /> Follow</>}
-            </Button>
-          )}
-          {user && profile && user.id === profile.user_id && (
-            <Button onClick={openEdit} variant="outline" className="rounded-full">
-              <Pencil className="h-4 w-4 mr-1" /> Edit profile
             </Button>
           )}
         </div>
