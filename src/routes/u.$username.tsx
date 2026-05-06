@@ -31,6 +31,8 @@ function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [responses, setResponses] = useState<FeedVideo[]>([]);
+  // For each response thumbnail, remember which parent video it replies to
+  const [responseParents, setResponseParents] = useState<string[]>([]);
   const [liked, setLiked] = useState<FeedVideo[]>([]);
   const [following, setFollowing] = useState(false);
   const [stats, setStats] = useState({ followers: 0, following: 0 });
@@ -58,7 +60,7 @@ function ProfilePage() {
             .order("created_at", { ascending: false }),
           supabase
             .from("replies")
-            .select("video_id,videos:videos!replies_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at)")
+            .select("id,video_id,user_id,storage_path,duration_seconds,created_at")
             .eq("user_id", p.user_id)
             .order("created_at", { ascending: false }),
           supabase
@@ -76,7 +78,21 @@ function ProfilePage() {
         if (cancelled) return;
 
         setVideos(await attachProfiles((v ?? []) as unknown as Omit<FeedVideo, "profiles">[]));
-        setResponses(await attachProfiles(((r ?? []).map((x: any) => x.videos).filter(Boolean)) as Omit<FeedVideo, "profiles">[]));
+        // Build FeedVideo-shaped rows from replies (the reply itself is the thumbnail)
+        const replyRows = (r ?? []).map((x: any) => ({
+          id: x.id as string,
+          user_id: x.user_id as string,
+          storage_path: x.storage_path as string,
+          caption: null,
+          hashtags: [] as string[],
+          duration_seconds: (x.duration_seconds ?? null) as number | null,
+          views_count: 0,
+          likes_count: 0,
+          replies_count: 0,
+          created_at: x.created_at as string,
+        }));
+        setResponses(await attachProfiles(replyRows as Omit<FeedVideo, "profiles">[]));
+        setResponseParents((r ?? []).map((x: any) => x.video_id as string));
         setLiked(await attachProfiles(((l ?? []).map((x: any) => x.videos).filter(Boolean)) as Omit<FeedVideo, "profiles">[]));
         setStats({ followers: followersRows?.length ?? 0, following: followingRows?.length ?? 0 });
 
@@ -92,6 +108,7 @@ function ProfilePage() {
         if (!cancelled) {
           setVideos([]);
           setResponses([]);
+          setResponseParents([]);
           setLiked([]);
           toast.error("Couldn't load this profile.");
         }
@@ -116,6 +133,40 @@ function ProfilePage() {
       setFollowing(true);
       setStats((s) => ({ ...s, followers: s.followers + 1 }));
     }
+  };
+
+  const openResponseThread = async (idx: number) => {
+    const parentId = responseParents[idx];
+    if (!parentId) return;
+    const [{ data: parentRow }, { data: replyRows }] = await Promise.all([
+      supabase
+        .from("videos")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at")
+        .eq("id", parentId)
+        .maybeSingle(),
+      supabase
+        .from("replies")
+        .select("id,user_id,storage_path,duration_seconds,created_at")
+        .eq("video_id", parentId)
+        .order("created_at", { ascending: true }),
+    ]);
+    const replyFeed: Omit<FeedVideo, "profiles">[] = (replyRows ?? []).map((x: any) => ({
+      id: x.id,
+      user_id: x.user_id,
+      storage_path: x.storage_path,
+      caption: null,
+      hashtags: [],
+      duration_seconds: x.duration_seconds ?? null,
+      views_count: 0,
+      likes_count: 0,
+      replies_count: 0,
+      created_at: x.created_at,
+    }));
+    const parentFeed = parentRow ? [parentRow as unknown as Omit<FeedVideo, "profiles">] : [];
+    const merged = await attachProfiles([...parentFeed, ...replyFeed]);
+    const clickedReplyId = responses[idx]?.id;
+    const startIndex = Math.max(0, merged.findIndex((m) => m.id === clickedReplyId));
+    player.open({ kind: "list", videos: merged, startIndex });
   };
 
   if (!loading && !profile) {
@@ -169,7 +220,7 @@ function ProfilePage() {
               videos={responses}
               loading={loading}
               emptyHint="No responses to other videos yet."
-              onPlay={(i) => player.open({ kind: "list", videos: responses, startIndex: i })}
+              onPlay={(i) => openResponseThread(i)}
             />
           </TabsContent>
           <TabsContent value="liked" className="mt-6">
