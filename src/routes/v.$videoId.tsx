@@ -45,38 +45,96 @@ function WatchPage() {
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followerStats, setFollowerStats] = useState({ followers: 0, following: 0 });
+  const [loading, setLoading] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const load = async () => {
-    const { data } = await supabase
-      .from("videos")
-      .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url)")
-      .eq("id", videoId)
-      .maybeSingle();
-    setVideo(data as unknown as Video);
-    if (data) {
-      const { data: r } = await supabase
-        .from("replies")
-        .select("id,user_id,storage_path,duration_seconds,created_at,profiles:profiles!replies_user_id_fkey(username,display_name,avatar_url)")
-        .eq("video_id", videoId)
-        .order("created_at", { ascending: false });
-      setReplies((r ?? []) as unknown as Reply[]);
-      // followers count
-      const [{ count: followers }, { count: followingCount }] = await Promise.all([
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", data.user_id),
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", data.user_id),
+    setLoading(true);
+    try {
+      const { data: rawVideo, error: videoError } = await supabase
+        .from("videos")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count")
+        .eq("id", videoId)
+        .maybeSingle();
+
+      if (videoError) throw videoError;
+
+      if (!rawVideo) {
+        setVideo(null);
+        setReplies([]);
+        return;
+      }
+
+      const [
+        { data: author },
+        { data: rawReplies, error: repliesError },
+        { count: followers },
+        { count: followingCount },
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("username,display_name,avatar_url")
+          .eq("user_id", rawVideo.user_id)
+          .maybeSingle(),
+        supabase
+          .from("replies")
+          .select("id,user_id,storage_path,duration_seconds,created_at")
+          .eq("video_id", videoId)
+          .order("created_at", { ascending: false }),
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", rawVideo.user_id),
+        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", rawVideo.user_id),
       ]);
+
+      if (repliesError) throw repliesError;
+
+      const replyUserIds = Array.from(new Set((rawReplies ?? []).map((reply) => reply.user_id)));
+      const { data: replyProfiles } = replyUserIds.length
+        ? await supabase
+            .from("profiles")
+            .select("user_id,username,display_name,avatar_url")
+            .in("user_id", replyUserIds)
+        : { data: [] };
+
+      const profileByUserId = new Map((replyProfiles ?? []).map((profile) => [profile.user_id, profile]));
+
+      setVideo({
+        ...(rawVideo as Omit<Video, "profiles">),
+        profiles: author ?? null,
+      });
+      setReplies(
+        ((rawReplies ?? []).map((reply) => ({
+          ...reply,
+          profiles: profileByUserId.get(reply.user_id)
+            ? {
+                username: profileByUserId.get(reply.user_id)!.username,
+                display_name: profileByUserId.get(reply.user_id)!.display_name,
+                avatar_url: profileByUserId.get(reply.user_id)!.avatar_url,
+              }
+            : null,
+        })) as Reply[])
+      );
       setFollowerStats({ followers: followers ?? 0, following: followingCount ?? 0 });
+
       if (user) {
         const [{ data: l }, { data: f }] = await Promise.all([
           supabase.from("likes").select("*").eq("user_id", user.id).eq("video_id", videoId).maybeSingle(),
-          supabase.from("follows").select("*").eq("follower_id", user.id).eq("following_id", data.user_id).maybeSingle(),
+          supabase.from("follows").select("*").eq("follower_id", user.id).eq("following_id", rawVideo.user_id).maybeSingle(),
         ]);
         setLiked(!!l);
         setFollowing(!!f);
+      } else {
+        setLiked(false);
+        setFollowing(false);
       }
-      // Track view
+
       supabase.from("video_views").insert({ video_id: videoId, user_id: user?.id ?? null });
+    } catch (error) {
+      console.error("Failed to load video page", error);
+      setVideo(null);
+      setReplies([]);
+      toast.error("Couldn't load this video.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,10 +172,18 @@ function WatchPage() {
     }
   };
 
-  if (!video) {
+  if (loading) {
     return (
       <AppShell>
         <div className="max-w-6xl mx-auto px-4 py-16 text-muted-foreground">Loading…</div>
+      </AppShell>
+    );
+  }
+
+  if (!video) {
+    return (
+      <AppShell>
+        <div className="max-w-6xl mx-auto px-4 py-16 text-muted-foreground">This video couldn't be loaded.</div>
       </AppShell>
     );
   }
