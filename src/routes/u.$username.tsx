@@ -6,7 +6,7 @@ import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { formatCount } from "@/lib/video";
+import { attachProfiles, formatCount } from "@/lib/video";
 import { UserCheck, UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/u/$username")({
@@ -47,26 +47,26 @@ function ProfilePage() {
       const [{ data: v }, { data: r }, { data: l }, { count: f1 }, { count: f2 }] = await Promise.all([
         supabase
           .from("videos")
-          .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url)")
+          .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at")
           .eq("user_id", p.user_id)
           .order("created_at", { ascending: false }),
         supabase
           .from("replies")
-          .select("video_id,videos:videos!replies_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url))")
+          .select("video_id,videos:videos!replies_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at)")
           .eq("user_id", p.user_id)
           .order("created_at", { ascending: false }),
         supabase
           .from("likes")
-          .select("video_id,videos:videos!likes_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url))")
+          .select("video_id,videos:videos!likes_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at)")
           .eq("user_id", p.user_id)
           .order("created_at", { ascending: false }),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", p.user_id),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", p.user_id),
       ]);
       if (cancelled) return;
-      setVideos((v ?? []) as unknown as FeedVideo[]);
-      setResponses(((r ?? []).map((x: any) => x.videos).filter(Boolean)) as FeedVideo[]);
-      setLiked(((l ?? []).map((x: any) => x.videos).filter(Boolean)) as FeedVideo[]);
+      setVideos(await attachProfiles((v ?? []) as unknown as Omit<FeedVideo, "profiles">[]));
+      setResponses(await attachProfiles(((r ?? []).map((x: any) => x.videos).filter(Boolean)) as Omit<FeedVideo, "profiles">[]));
+      setLiked(await attachProfiles(((l ?? []).map((x: any) => x.videos).filter(Boolean)) as Omit<FeedVideo, "profiles">[]));
       setStats({ followers: f1 ?? 0, following: f2 ?? 0 });
       if (user) {
         const { data: f } = await supabase.from("follows").select("*").eq("follower_id", user.id).eq("following_id", p.user_id).maybeSingle();
