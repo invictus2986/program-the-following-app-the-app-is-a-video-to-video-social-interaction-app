@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -62,10 +63,30 @@ function AuthPage() {
     <AppShell>
       <div className="max-w-md mx-auto px-4 py-16">
         <div className="rounded-3xl bg-card border border-border p-8 shadow-[var(--shadow-elev)]">
-          <h1 className="text-3xl font-display font-bold mb-2">{mode === "signin" ? "Welcome back" : "Join echo"}</h1>
+          <h1 className="text-3xl font-display font-bold mb-2">{mode === "signin" ? "Welcome back" : "Join WOPLA"}</h1>
           <p className="text-muted-foreground text-sm mb-6">
             {mode === "signin" ? "Sign in to post and reply with video." : "Pick a handle. The world will see it."}
           </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full rounded-full font-semibold mb-4"
+            onClick={async () => {
+              const result = await lovable.auth.signInWithOAuth("google", {
+                redirect_uri: window.location.origin,
+              });
+              if (result.error) {
+                toast.error(result.error.message ?? "Google sign-in failed");
+              }
+            }}
+          >
+            Continue with Google
+          </Button>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or with email</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
           <form onSubmit={submit} className="space-y-4">
             {mode === "signup" && (
               <div>
