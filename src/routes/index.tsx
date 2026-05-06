@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { attachProfiles } from "@/lib/video";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -26,11 +27,11 @@ function Index() {
       }
       const { data } = await supabase
         .from("videos")
-        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url)")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at")
         .order("created_at", { ascending: false })
         .limit(60);
       if (cancelled) return;
-      let list = (data ?? []) as unknown as FeedVideo[];
+      let list = await attachProfiles((data ?? []) as unknown as Omit<FeedVideo, "profiles">[]);
       if (followingIds.length) {
         list = [
           ...list.filter((v) => followingIds.includes(v.user_id)),

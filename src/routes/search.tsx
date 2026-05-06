@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { Input } from "@/components/ui/input";
 import { Search as SearchIcon } from "lucide-react";
+import { attachProfiles } from "@/lib/video";
 
 type S = { q?: string };
 
@@ -32,12 +33,12 @@ function SearchPage() {
       const tag = q.replace(/^#/, "").toLowerCase();
       const { data } = await supabase
         .from("videos")
-        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url)")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at")
         .contains("hashtags", [tag])
         .order("created_at", { ascending: false })
         .limit(60);
       if (!cancelled) {
-        setVideos((data ?? []) as unknown as FeedVideo[]);
+        setVideos(await attachProfiles((data ?? []) as unknown as Omit<FeedVideo, "profiles">[]));
         setLoading(false);
       }
     })();

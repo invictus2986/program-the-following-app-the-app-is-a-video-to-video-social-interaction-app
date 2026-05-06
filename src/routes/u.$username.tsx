@@ -6,8 +6,9 @@ import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { formatCount } from "@/lib/video";
+import { attachProfiles, formatCount } from "@/lib/video";
 import { UserCheck, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/u/$username")({
   component: ProfilePage,
@@ -37,42 +38,64 @@ function ProfilePage() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data: p } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
-      if (!p || cancelled) {
-        setProfile(null);
-        setLoading(false);
-        return;
+      try {
+        const { data: p, error: profileError } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
+        if (profileError) throw profileError;
+        if (!p || cancelled) {
+          setProfile(null);
+          return;
+        }
+
+        setProfile(p as Profile);
+
+        const [{ data: v, error: videosError }, { data: r, error: repliesError }, { data: l, error: likesError }, { data: followersRows, error: followersError }, { data: followingRows, error: followingError }] = await Promise.all([
+          supabase
+            .from("videos")
+            .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at")
+            .eq("user_id", p.user_id)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("replies")
+            .select("video_id,videos:videos!replies_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at)")
+            .eq("user_id", p.user_id)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("likes")
+            .select("video_id,videos:videos!likes_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at)")
+            .eq("user_id", p.user_id)
+            .order("created_at", { ascending: false }),
+          supabase.from("follows").select("follower_id").eq("following_id", p.user_id),
+          supabase.from("follows").select("following_id").eq("follower_id", p.user_id),
+        ]);
+
+        if (videosError || repliesError || likesError || followersError || followingError) {
+          throw videosError || repliesError || likesError || followersError || followingError;
+        }
+        if (cancelled) return;
+
+        setVideos(await attachProfiles((v ?? []) as unknown as Omit<FeedVideo, "profiles">[]));
+        setResponses(await attachProfiles(((r ?? []).map((x: any) => x.videos).filter(Boolean)) as Omit<FeedVideo, "profiles">[]));
+        setLiked(await attachProfiles(((l ?? []).map((x: any) => x.videos).filter(Boolean)) as Omit<FeedVideo, "profiles">[]));
+        setStats({ followers: followersRows?.length ?? 0, following: followingRows?.length ?? 0 });
+
+        if (user) {
+          const { data: f, error: followError } = await supabase.from("follows").select("*").eq("follower_id", user.id).eq("following_id", p.user_id).maybeSingle();
+          if (followError) throw followError;
+          setFollowing(!!f);
+        } else {
+          setFollowing(false);
+        }
+      } catch (error) {
+        console.error("Failed to load profile page", error);
+        if (!cancelled) {
+          setVideos([]);
+          setResponses([]);
+          setLiked([]);
+          toast.error("Couldn't load this profile.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setProfile(p as Profile);
-      const [{ data: v }, { data: r }, { data: l }, { count: f1 }, { count: f2 }] = await Promise.all([
-        supabase
-          .from("videos")
-          .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url)")
-          .eq("user_id", p.user_id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("replies")
-          .select("video_id,videos:videos!replies_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url))")
-          .eq("user_id", p.user_id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("likes")
-          .select("video_id,videos:videos!likes_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,profiles:profiles!videos_user_id_fkey(username,display_name,avatar_url))")
-          .eq("user_id", p.user_id)
-          .order("created_at", { ascending: false }),
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", p.user_id),
-        supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", p.user_id),
-      ]);
-      if (cancelled) return;
-      setVideos((v ?? []) as unknown as FeedVideo[]);
-      setResponses(((r ?? []).map((x: any) => x.videos).filter(Boolean)) as FeedVideo[]);
-      setLiked(((l ?? []).map((x: any) => x.videos).filter(Boolean)) as FeedVideo[]);
-      setStats({ followers: f1 ?? 0, following: f2 ?? 0 });
-      if (user) {
-        const { data: f } = await supabase.from("follows").select("*").eq("follower_id", user.id).eq("following_id", p.user_id).maybeSingle();
-        setFollowing(!!f);
-      }
-      setLoading(false);
     })();
     return () => {
       cancelled = true;
