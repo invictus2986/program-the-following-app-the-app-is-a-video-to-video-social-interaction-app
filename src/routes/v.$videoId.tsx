@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { usePlayer, fetchVideosByIds } from "@/components/VideoPlayer";
 
 export const Route = createFileRoute("/v/$videoId")({
   component: WatchPage,
@@ -38,6 +39,7 @@ function WatchPage() {
   const { videoId } = Route.useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const player = usePlayer();
   const [video, setVideo] = useState<Video | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [activeReply, setActiveReply] = useState<Reply | null>(null);
@@ -288,7 +290,36 @@ function WatchPage() {
             {replies.map((r) => (
               <button
                 key={r.id}
-                onClick={() => setActiveReply(r)}
+                onClick={async () => {
+                  // Build a queue: clicked reply first, then other replies from this same video
+                  const ids = [r.id, ...replies.filter((x) => x.id !== r.id).map((x) => x.id)];
+                  // Replies are stored in the `replies` table, not `videos` — fetch them as playable items
+                  // by mapping reply rows into FeedVideo-like shape
+                  const queue = replies
+                    .slice()
+                    .sort((a, b) => (a.id === r.id ? -1 : b.id === r.id ? 1 : 0))
+                    .map((reply) => ({
+                      id: reply.id,
+                      user_id: reply.user_id,
+                      storage_path: reply.storage_path,
+                      caption: null,
+                      hashtags: [] as string[],
+                      duration_seconds: reply.duration_seconds,
+                      views_count: 0,
+                      likes_count: 0,
+                      replies_count: 0,
+                      created_at: reply.created_at,
+                      profiles: reply.profiles,
+                    }));
+                  void ids;
+                  void fetchVideosByIds;
+                  player.open({
+                    kind: "replies",
+                    parentVideoId: video.id,
+                    videos: queue,
+                    startIndex: 0,
+                  });
+                }}
                 className={`w-full text-left rounded-2xl border p-3 flex items-center gap-3 transition ${activeReply?.id === r.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 bg-card"}`}
               >
                 <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-black flex-shrink-0">
