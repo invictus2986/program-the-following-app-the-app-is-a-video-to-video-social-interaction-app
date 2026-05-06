@@ -58,6 +58,24 @@ function RecordPage() {
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
+      videoRef.current.removeAttribute("src");
+      videoRef.current.load();
+    }
+  };
+
+  const normalizePreviewDuration = (video: HTMLVideoElement) => {
+    if (video.duration === Infinity || Number.isNaN(video.duration)) {
+      const onTimeUpdate = () => {
+        video.removeEventListener("timeupdate", onTimeUpdate);
+        video.currentTime = 0;
+      };
+
+      video.addEventListener("timeupdate", onTimeUpdate);
+      video.currentTime = 1e9;
+    }
   };
 
   const initCamera = async () => {
@@ -77,6 +95,24 @@ function RecordPage() {
     if (stage === "idle" && user) initCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, user]);
+
+  useEffect(() => {
+    if (stage !== "review" || !previewUrl || !previewRef.current) return;
+
+    const video = previewRef.current;
+    video.pause();
+    video.srcObject = null;
+    video.src = previewUrl;
+    video.currentTime = 0;
+    video.load();
+
+    const handleLoadedMetadata = () => normalizePreviewDuration(video);
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+    };
+  }, [stage, previewUrl]);
 
   const startRecording = () => {
     if (!streamRef.current) return;
@@ -186,28 +222,16 @@ function RecordPage() {
 
         <div className="relative rounded-3xl overflow-hidden bg-black aspect-video shadow-[var(--shadow-elev)]">
           {stage !== "review" ? (
-            <video ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover scale-x-[-1]" />
+            <video key="camera-preview" ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover scale-x-[-1]" />
           ) : (
             <video
+              key={previewUrl ?? "recording-preview"}
               ref={previewRef}
               src={previewUrl ?? undefined}
               controls
               playsInline
               preload="metadata"
-              onLoadedMetadata={(e) => {
-                // MediaRecorder webm blobs report duration=Infinity. Force the
-                // browser to scan to the end so it computes a real duration
-                // and the preview becomes playable/seekable.
-                const v = e.currentTarget;
-                if (v.duration === Infinity || isNaN(v.duration)) {
-                  const onTimeUpdate = () => {
-                    v.removeEventListener("timeupdate", onTimeUpdate);
-                    v.currentTime = 0;
-                  };
-                  v.addEventListener("timeupdate", onTimeUpdate);
-                  v.currentTime = 1e9;
-                }
-              }}
+              onLoadedMetadata={(e) => normalizePreviewDuration(e.currentTarget)}
               className="absolute inset-0 h-full w-full object-contain bg-black"
             />
           )}
