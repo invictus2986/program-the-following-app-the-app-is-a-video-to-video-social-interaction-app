@@ -163,7 +163,7 @@ function PlayerOverlay({ source, onClose }: { source: PlayerSource; onClose: () 
         {queue.map((v, i) => (
           <div
             key={`${v.id}-${i}`}
-            ref={(el) => (slideRefs.current[i] = el)}
+            ref={(el) => { slideRefs.current[i] = el; }}
             className="h-screen w-full snap-start snap-always"
           >
             <Slide video={v} active={i === index} muted={muted} onClose={onClose} />
