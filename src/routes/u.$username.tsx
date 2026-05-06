@@ -5,10 +5,14 @@ import { AppShell } from "@/components/AppShell";
 import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount } from "@/lib/video";
 import { usePlayer } from "@/components/VideoPlayer";
-import { UserCheck, UserPlus } from "lucide-react";
+import { UserCheck, UserPlus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/u/$username")({
@@ -25,7 +29,7 @@ type Profile = {
 
 function ProfilePage() {
   const { username } = Route.useParams();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const player = usePlayer();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -37,6 +41,39 @@ function ProfilePage() {
   const [following, setFollowing] = useState(false);
   const [stats, setStats] = useState({ followers: 0, following: 0 });
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const openEdit = () => {
+    setEditDisplayName(profile?.display_name ?? "");
+    setEditBio(profile?.bio ?? "");
+    setEditOpen(true);
+  };
+
+  const saveProfile = async () => {
+    if (!user || !profile) return;
+    const name = editDisplayName.trim();
+    if (name.length < 1 || name.length > 50) {
+      toast.error("Display name must be 1-50 characters");
+      return;
+    }
+    setSavingProfile(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: name, bio: editBio.trim() || null })
+      .eq("user_id", user.id);
+    setSavingProfile(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setProfile({ ...profile, display_name: name, bio: editBio.trim() || null });
+    await refreshProfile();
+    setEditOpen(false);
+    toast.success("Profile updated");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -199,6 +236,11 @@ function ProfilePage() {
               {following ? <><UserCheck className="h-4 w-4 mr-1" /> Following</> : <><UserPlus className="h-4 w-4 mr-1" /> Follow</>}
             </Button>
           )}
+          {user && profile && user.id === profile.user_id && (
+            <Button onClick={openEdit} variant="outline" className="rounded-full">
+              <Pencil className="h-4 w-4 mr-1" /> Edit profile
+            </Button>
+          )}
         </div>
 
         <Tabs defaultValue="videos" className="mt-8">
@@ -233,6 +275,27 @@ function ProfilePage() {
           </TabsContent>
         </Tabs>
       </div>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="dn">Display name</Label>
+              <Input id="dn" value={editDisplayName} onChange={(e) => setEditDisplayName(e.target.value)} maxLength={50} />
+            </div>
+            <div>
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea id="bio" value={editBio} onChange={(e) => setEditBio(e.target.value)} maxLength={200} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={savingProfile}>Cancel</Button>
+            <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Saving..." : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
