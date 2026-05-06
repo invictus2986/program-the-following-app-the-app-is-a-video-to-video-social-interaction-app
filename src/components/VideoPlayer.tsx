@@ -334,15 +334,20 @@ function Slide({ video, active, muted, onClose }: { video: FeedVideo; active: bo
             </button>
             <button
               onClick={() => {
+                if (!user) {
+                  onClose();
+                  navigate({ to: "/auth" });
+                  return;
+                }
                 onClose();
-                navigate({ to: "/v/$videoId", params: { videoId: video.id } });
+                navigate({ to: "/record", search: { replyTo: video.id } });
               }}
               className="flex flex-col items-center gap-1"
             >
               <div className="h-12 w-12 grid place-items-center rounded-full bg-white/15 text-white backdrop-blur hover:scale-105 transition">
                 <MessageSquare className="h-6 w-6" />
               </div>
-              <span className="text-[10px] font-semibold">Open</span>
+              <span className="text-[10px] font-semibold">Reply</span>
             </button>
           </div>
         </div>
