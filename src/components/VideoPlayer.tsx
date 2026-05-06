@@ -330,7 +330,9 @@ function Slide({ video, active, muted, onClose }: { video: FeedVideo; active: bo
               <div className="h-12 w-12 grid place-items-center rounded-full bg-white/15 text-white backdrop-blur hover:scale-105 transition">
                 <User className="h-6 w-6" />
               </div>
-              <span className="text-[10px] font-semibold">Profile</span>
+              <span className="text-[10px] font-semibold max-w-[64px] truncate">
+                {video.profiles?.display_name || video.profiles?.username || "Profile"}
+              </span>
             </button>
             <button onClick={goReply} className="flex flex-col items-center gap-1">
               <div className="h-12 w-12 grid place-items-center rounded-full bg-white/15 text-white backdrop-blur hover:scale-105 transition">
