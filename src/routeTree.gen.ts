@@ -13,6 +13,7 @@ import { Route as RecordRouteImport } from './routes/record'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VVideoIdRouteImport } from './routes/v.$videoId'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
 
 const RecordRoute = RecordRouteImport.update({
   id: '/record',
@@ -34,17 +35,24 @@ const VVideoIdRoute = VVideoIdRouteImport.update({
   path: '/v/$videoId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
+  '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
+  '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
+  '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/record' | '/v/$videoId'
+  fullPaths: '/' | '/auth' | '/record' | '/u/$username' | '/v/$videoId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/record' | '/v/$videoId'
-  id: '__root__' | '/' | '/auth' | '/record' | '/v/$videoId'
+  to: '/' | '/auth' | '/record' | '/u/$username' | '/v/$videoId'
+  id: '__root__' | '/' | '/auth' | '/record' | '/u/$username' | '/v/$videoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   RecordRoute: typeof RecordRoute
+  UUsernameRoute: typeof UUsernameRoute
   VVideoIdRoute: typeof VVideoIdRoute
 }
 
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VVideoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   RecordRoute: RecordRoute,
+  UUsernameRoute: UUsernameRoute,
   VVideoIdRoute: VVideoIdRoute,
 }
 export const routeTree = rootRouteImport
