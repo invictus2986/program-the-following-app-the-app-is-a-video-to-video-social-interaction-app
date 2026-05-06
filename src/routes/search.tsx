@@ -6,6 +6,7 @@ import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { Input } from "@/components/ui/input";
 import { Search as SearchIcon } from "lucide-react";
 import { attachProfiles } from "@/lib/video";
+import { usePlayer } from "@/components/VideoPlayer";
 
 type S = { q?: string };
 
@@ -20,6 +21,7 @@ function SearchPage() {
   const [input, setInput] = useState(q ?? "");
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [loading, setLoading] = useState(false);
+  const player = usePlayer();
 
   useEffect(() => {
     setInput(q ?? "");
@@ -72,7 +74,12 @@ function SearchPage() {
             Videos tagged <span className="text-primary">#{q.replace(/^#/, "")}</span>
           </h2>
         )}
-        <VideoGrid videos={videos} loading={loading} emptyHint={q ? "No videos with that hashtag yet." : "Search for a hashtag above."} />
+        <VideoGrid
+          videos={videos}
+          loading={loading}
+          emptyHint={q ? "No videos with that hashtag yet." : "Search for a hashtag above."}
+          onPlay={(i) => player.open({ kind: "search", videos, startIndex: i })}
+        />
       </div>
     </AppShell>
   );

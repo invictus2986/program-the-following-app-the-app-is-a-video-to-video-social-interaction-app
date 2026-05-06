@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount } from "@/lib/video";
+import { usePlayer } from "@/components/VideoPlayer";
 import { UserCheck, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,6 +27,7 @@ function ProfilePage() {
   const { username } = Route.useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const player = usePlayer();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [responses, setResponses] = useState<FeedVideo[]>([]);
@@ -155,13 +157,28 @@ function ProfilePage() {
             <TabsTrigger value="liked" className="rounded-full">Liked</TabsTrigger>
           </TabsList>
           <TabsContent value="videos" className="mt-6">
-            <VideoGrid videos={videos} loading={loading} emptyHint="No videos posted yet." />
+            <VideoGrid
+              videos={videos}
+              loading={loading}
+              emptyHint="No videos posted yet."
+              onPlay={(i) => player.open({ kind: "list", videos, startIndex: i })}
+            />
           </TabsContent>
           <TabsContent value="responses" className="mt-6">
-            <VideoGrid videos={responses} loading={loading} emptyHint="No responses to other videos yet." />
+            <VideoGrid
+              videos={responses}
+              loading={loading}
+              emptyHint="No responses to other videos yet."
+              onPlay={(i) => player.open({ kind: "list", videos: responses, startIndex: i })}
+            />
           </TabsContent>
           <TabsContent value="liked" className="mt-6">
-            <VideoGrid videos={liked} loading={loading} emptyHint="Nothing liked yet." />
+            <VideoGrid
+              videos={liked}
+              loading={loading}
+              emptyHint="Nothing liked yet."
+              onPlay={(i) => player.open({ kind: "list", videos: liked, startIndex: i })}
+            />
           </TabsContent>
         </Tabs>
       </div>

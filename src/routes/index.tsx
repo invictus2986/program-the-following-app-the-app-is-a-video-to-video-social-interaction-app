@@ -6,6 +6,7 @@ import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { attachProfiles } from "@/lib/video";
+import { usePlayer } from "@/components/VideoPlayer";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -15,6 +16,7 @@ function Index() {
   const { user, loading: authLoading } = useAuth();
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [loading, setLoading] = useState(true);
+  const player = usePlayer();
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +71,12 @@ function Index() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-2xl font-semibold">For you</h2>
         </div>
-        <VideoGrid videos={videos} loading={loading} emptyHint="No videos yet — be the first to post." />
+        <VideoGrid
+          videos={videos}
+          loading={loading}
+          emptyHint="No videos yet — be the first to post."
+          onPlay={(i) => player.open({ kind: "list", videos, startIndex: i })}
+        />
       </section>
     </AppShell>
   );
