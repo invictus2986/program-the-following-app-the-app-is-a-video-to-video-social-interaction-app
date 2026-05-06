@@ -9,9 +9,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col mx-auto w-full max-w-[440px] border-x border-border bg-background">
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-2xl bg-[image:var(--gradient-mint)] shadow-[var(--shadow-glow)] grid place-items-center">
               <Video className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
