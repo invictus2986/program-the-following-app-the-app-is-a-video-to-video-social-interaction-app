@@ -110,11 +110,34 @@ function ProfilePage() {
           setResponses([]);
           setResponseParents([]);
           setLiked([]);
+          toast.error("Couldn't load this profile.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [username, user?.id]);
+
+  const toggleFollow = async () => {
+    if (!user || !profile) return navigate({ to: "/auth" });
+    if (user.id === profile.user_id) return;
+    if (following) {
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", profile.user_id);
+      setFollowing(false);
+      setStats((s) => ({ ...s, followers: Math.max(0, s.followers - 1) }));
+    } else {
+      await supabase.from("follows").insert({ follower_id: user.id, following_id: profile.user_id });
+      setFollowing(true);
+      setStats((s) => ({ ...s, followers: s.followers + 1 }));
+    }
+  };
 
   const openResponseThread = async (idx: number) => {
     const parentId = responseParents[idx];
     if (!parentId) return;
-    // Fetch the original video and all of its replies
     const [{ data: parentRow }, { data: replyRows }] = await Promise.all([
       supabase
         .from("videos")
@@ -144,31 +167,6 @@ function ProfilePage() {
     const clickedReplyId = responses[idx]?.id;
     const startIndex = Math.max(0, merged.findIndex((m) => m.id === clickedReplyId));
     player.open({ kind: "list", videos: merged, startIndex });
-  };
-
-          toast.error("Couldn't load this profile.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [username, user?.id]);
-
-  const toggleFollow = async () => {
-    if (!user || !profile) return navigate({ to: "/auth" });
-    if (user.id === profile.user_id) return;
-    if (following) {
-      await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", profile.user_id);
-      setFollowing(false);
-      setStats((s) => ({ ...s, followers: Math.max(0, s.followers - 1) }));
-    } else {
-      await supabase.from("follows").insert({ follower_id: user.id, following_id: profile.user_id });
-      setFollowing(true);
-      setStats((s) => ({ ...s, followers: s.followers + 1 }));
-    }
   };
 
   if (!loading && !profile) {
