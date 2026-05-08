@@ -33,6 +33,11 @@ function SearchPage() {
     (async () => {
       setLoading(true);
       const tag = q.replace(/^#/, "").toLowerCase();
+      // Record search for personalization
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user) {
+        supabase.from("search_history").insert({ user_id: auth.user.id, tag }).then(() => {});
+      }
       const { data } = await supabase
         .from("videos")
         .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at")
