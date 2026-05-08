@@ -6,6 +6,7 @@ import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { attachProfiles } from "@/lib/video";
+import { getBlockedUserIds, filterByBlocks } from "@/lib/blocks";
 import { usePlayer } from "@/components/VideoPlayer";
 
 export const Route = createFileRoute("/")({
@@ -25,6 +26,7 @@ function Index() {
       setLoading(true);
       let followingIds: string[] = [];
       const tagWeights = new Map<string, number>();
+      const blocked = await getBlockedUserIds(user?.id);
       if (user) {
         const { data: f } = await supabase.from("follows").select("following_id").eq("follower_id", user.id);
         followingIds = (f ?? []).map((r) => r.following_id);
@@ -46,6 +48,7 @@ function Index() {
         .limit(60);
       if (cancelled) return;
       let list = await attachProfiles((data ?? []) as unknown as Omit<FeedVideo, "profiles">[]);
+      list = filterByBlocks(list, blocked);
       if (followingIds.length) {
         list = [
           ...list.filter((v) => followingIds.includes(v.user_id)),
