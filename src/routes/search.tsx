@@ -6,6 +6,7 @@ import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { Input } from "@/components/ui/input";
 import { Search as SearchIcon } from "lucide-react";
 import { attachProfiles } from "@/lib/video";
+import { getBlockedUserIds, filterByBlocks } from "@/lib/blocks";
 import { usePlayer } from "@/components/VideoPlayer";
 
 type S = { q?: string };
@@ -44,8 +45,10 @@ function SearchPage() {
         .contains("hashtags", [tag])
         .order("created_at", { ascending: false })
         .limit(60);
+      const blocked = await getBlockedUserIds(auth.user?.id);
       if (!cancelled) {
-        setVideos(await attachProfiles((data ?? []) as unknown as Omit<FeedVideo, "profiles">[]));
+        const list = await attachProfiles((data ?? []) as unknown as Omit<FeedVideo, "profiles">[]);
+        setVideos(filterByBlocks(list, blocked));
         setLoading(false);
       }
     })();
