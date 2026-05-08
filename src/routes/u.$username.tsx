@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount } from "@/lib/video";
+import { getBlockedUserIds, filterByBlocks } from "@/lib/blocks";
 import { usePlayer } from "@/components/VideoPlayer";
-import { UserCheck, UserPlus, Pencil } from "lucide-react";
+import { UserCheck, UserPlus, Pencil, Ban, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/u/$username")({
@@ -39,17 +40,41 @@ function ProfilePage() {
   const [responseParents, setResponseParents] = useState<string[]>([]);
   const [liked, setLiked] = useState<FeedVideo[]>([]);
   const [following, setFollowing] = useState(false);
+  const [blockedByMe, setBlockedByMe] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [stats, setStats] = useState({ followers: 0, following: 0 });
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [editDisplayName, setEditDisplayName] = useState("");
   const [editBio, setEditBio] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [blockList, setBlockList] = useState<{ user_id: string; username: string; display_name: string | null }[]>([]);
 
   const openEdit = () => {
     setEditDisplayName(profile?.display_name ?? "");
     setEditBio(profile?.bio ?? "");
     setEditOpen(true);
+    void loadBlockList();
+  };
+
+  const loadBlockList = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("blocks").select("blocked_id").eq("blocker_id", user.id);
+    const ids = (data ?? []).map((r: any) => r.blocked_id);
+    if (!ids.length) { setBlockList([]); return; }
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("user_id,username,display_name")
+      .in("user_id", ids);
+    setBlockList((profs ?? []) as any);
+  };
+
+  const unblockUser = async (blockedId: string) => {
+    if (!user) return;
+    const { error } = await supabase.from("blocks").delete().eq("blocker_id", user.id).eq("blocked_id", blockedId);
+    if (error) { toast.error(error.message); return; }
+    setBlockList((prev) => prev.filter((p) => p.user_id !== blockedId));
+    toast.success("Unblocked");
   };
 
   const saveProfile = async () => {
@@ -86,6 +111,26 @@ function ProfilePage() {
           setProfile(null);
           return;
         }
+
+        // Mutual invisibility: if a block exists either direction, hide profile
+        if (user && user.id !== p.user_id) {
+          const { data: b } = await supabase
+            .from("blocks")
+            .select("blocker_id,blocked_id")
+            .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${p.user_id}),and(blocker_id.eq.${p.user_id},blocked_id.eq.${user.id})`)
+            .limit(1);
+          if ((b?.length ?? 0) > 0) {
+            // Only the user who *initiated* the block sees it as "blocked" with unblock affordance.
+            // Either way, profile content is hidden.
+            const iBlockedThem = b!.some((r: any) => r.blocker_id === user.id);
+            setBlockedByMe(iBlockedThem);
+            setHidden(true);
+            setProfile(p as Profile);
+            return;
+          }
+        }
+        setHidden(false);
+        setBlockedByMe(false);
 
         setProfile(p as Profile);
 
@@ -172,6 +217,30 @@ function ProfilePage() {
     }
   };
 
+  const blockUser = async () => {
+    if (!user || !profile) return navigate({ to: "/auth" });
+    if (user.id === profile.user_id) return;
+    if (!confirm(`Block @${profile.username}? You'll both become invisible to each other until you unblock them from Edit profile.`)) return;
+    // also remove follow relationships in both directions
+    await supabase.from("follows").delete().or(
+      `and(follower_id.eq.${user.id},following_id.eq.${profile.user_id}),and(follower_id.eq.${profile.user_id},following_id.eq.${user.id})`
+    );
+    const { error } = await supabase.from("blocks").insert({ blocker_id: user.id, blocked_id: profile.user_id });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Blocked @${profile.username}`);
+    setBlockedByMe(true);
+    setHidden(true);
+  };
+
+  const unblockFromProfile = async () => {
+    if (!user || !profile) return;
+    const { error } = await supabase.from("blocks").delete().eq("blocker_id", user.id).eq("blocked_id", profile.user_id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Unblocked @${profile.username}`);
+    // reload
+    location.reload();
+  };
+
   const openResponseThread = async (idx: number) => {
     const parentId = responseParents[idx];
     if (!parentId) return;
@@ -214,6 +283,26 @@ function ProfilePage() {
     );
   }
 
+  if (!loading && profile && hidden) {
+    return (
+      <AppShell>
+        <div className="max-w-3xl mx-auto px-4 py-16">
+          {blockedByMe ? (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h1 className="font-display text-2xl font-bold mb-2">You blocked @{profile.username}</h1>
+              <p className="text-muted-foreground text-sm mb-4">Their content is hidden from you, and yours from them.</p>
+              <Button onClick={unblockFromProfile} variant="outline" className="rounded-full">
+                <ShieldOff className="h-4 w-4 mr-1" /> Unblock
+              </Button>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">User not found.</p>
+          )}
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -240,9 +329,14 @@ function ProfilePage() {
             {profile?.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
           </div>
           {user && profile && user.id !== profile.user_id && (
-            <Button onClick={toggleFollow} variant={following ? "outline" : "default"} className="rounded-full">
-              {following ? <><UserCheck className="h-4 w-4 mr-1" /> Following</> : <><UserPlus className="h-4 w-4 mr-1" /> Follow</>}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button onClick={toggleFollow} variant={following ? "outline" : "default"} className="rounded-full">
+                {following ? <><UserCheck className="h-4 w-4 mr-1" /> Following</> : <><UserPlus className="h-4 w-4 mr-1" /> Follow</>}
+              </Button>
+              <Button onClick={blockUser} variant="outline" size="sm" className="rounded-full text-destructive hover:text-destructive">
+                <Ban className="h-4 w-4 mr-1" /> Block
+              </Button>
+            </div>
           )}
         </div>
 
@@ -292,6 +386,23 @@ function ProfilePage() {
               <Label htmlFor="bio">Bio</Label>
               <Textarea id="bio" value={editBio} onChange={(e) => setEditBio(e.target.value)} maxLength={200} rows={3} />
             </div>
+          <div>
+            <Label>Blocked users</Label>
+            {blockList.length === 0 ? (
+              <p className="text-xs text-muted-foreground mt-1">You haven't blocked anyone.</p>
+            ) : (
+              <ul className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                {blockList.map((b) => (
+                  <li key={b.user_id} className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted">
+                    <span>@{b.username}</span>
+                    <button onClick={() => unblockUser(b.user_id)} className="text-xs text-primary hover:underline">
+                      Unblock
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)} disabled={savingProfile}>Cancel</Button>
