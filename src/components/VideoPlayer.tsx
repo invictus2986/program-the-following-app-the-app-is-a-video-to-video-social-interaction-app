@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart, MessageSquare, UserCheck, UserPlus, User, X, ChevronUp, ChevronDown, Volume2, VolumeX, Layers, Play, Pause } from "lucide-react";
+import { Heart, MessageSquare, UserCheck, UserPlus, User, X, ChevronUp, ChevronDown, Volume2, VolumeX, Layers, Play, Pause, Video as VideoIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount, publicUrl } from "@/lib/video";
@@ -50,6 +50,8 @@ function PlayerOverlay({ source, onClose }: { source: PlayerSource; onClose: () 
   const containerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const skipScrollRef = useRef(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Build queue based on source kind
   useEffect(() => {
@@ -119,6 +121,18 @@ function PlayerOverlay({ source, onClose }: { source: PlayerSource; onClose: () 
 
   if (!queue.length) return null;
 
+  const currentVideo = queue[index];
+  const goRecordReply = () => {
+    if (!user) {
+      onClose();
+      navigate({ to: "/auth" });
+      return;
+    }
+    if (!currentVideo) return;
+    onClose();
+    navigate({ to: "/record", search: { replyTo: currentVideo.id } });
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-black">
       <button
@@ -134,6 +148,14 @@ function PlayerOverlay({ source, onClose }: { source: PlayerSource; onClose: () 
         aria-label={muted ? "Unmute" : "Mute"}
       >
         {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+      </button>
+      <button
+        onClick={goRecordReply}
+        className="absolute top-4 right-28 z-20 h-10 w-10 grid place-items-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 backdrop-blur shadow-[var(--shadow-elev)]"
+        aria-label="Record video reply"
+        title="Record a video reply"
+      >
+        <VideoIcon className="h-5 w-5" />
       </button>
       {/* Up / Down arrows */}
       {index > 0 && (

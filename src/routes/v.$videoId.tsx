@@ -283,11 +283,16 @@ function WatchPage() {
           <h3 className="font-display text-xl font-semibold mb-3 flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" /> {video.replies_count} {video.replies_count === 1 ? "reply" : "replies"}
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {replies.length === 0 && (
               <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
             )}
-            {replies.map((r) => (
+            {replies.map((r) => {
+              // back-and-forth: replies on this video between original poster and this reply's author
+              const backForth = replies.filter(
+                (x) => x.user_id === r.user_id || x.user_id === video.user_id,
+              ).length;
+              return (
               <button
                 key={r.id}
                 onClick={async () => {
@@ -327,12 +332,18 @@ function WatchPage() {
                 <div className="absolute inset-0 grid place-items-center">
                   <Play className="h-8 w-8 text-white drop-shadow" fill="white" />
                 </div>
+                {backForth > 1 && (
+                  <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shadow-[var(--shadow-elev)]">
+                    +{backForth}
+                  </div>
+                )}
                 <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-left">
                   <p className="font-semibold text-xs truncate">@{r.profiles?.username ?? "unknown"}</p>
                   <p className="text-[10px] opacity-80">{formatDuration(r.duration_seconds)}</p>
                 </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         </aside>
       </div>
