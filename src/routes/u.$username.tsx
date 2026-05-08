@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount } from "@/lib/video";
-import { getBlockedUserIds, filterByBlocks } from "@/lib/blocks";
 import { usePlayer } from "@/components/VideoPlayer";
 import { UserCheck, UserPlus, Pencil, Ban, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
