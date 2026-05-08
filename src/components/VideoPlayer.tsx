@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart, MessageSquare, UserCheck, UserPlus, User, X, ChevronUp, ChevronDown, Volume2, VolumeX, Layers } from "lucide-react";
+import { Heart, MessageSquare, UserCheck, UserPlus, User, X, ChevronUp, ChevronDown, Volume2, VolumeX, Layers, Play, Pause } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount, publicUrl } from "@/lib/video";
@@ -187,6 +187,8 @@ function Slide({ video, active, muted, onClose, threadVideoId }: { video: FeedVi
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(video.likes_count);
   const [following, setFollowing] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [showIndicator, setShowIndicator] = useState(false);
 
   useEffect(() => {
     setLikeCount(video.likes_count);
@@ -276,6 +278,18 @@ function Slide({ video, active, muted, onClose, threadVideoId }: { video: FeedVi
     navigate({ to: "/u/$username", params: { username: video.profiles.username } });
   };
 
+  const togglePlay = () => {
+    const el = ref.current;
+    if (!el) return;
+    if (el.paused) {
+      el.play().catch(() => {});
+    } else {
+      el.pause();
+    }
+    setShowIndicator(true);
+    setTimeout(() => setShowIndicator(false), 600);
+  };
+
   const openThread = () => {
     onClose();
     navigate({ to: "/v/$videoId", params: { videoId: threadVideoId } });
@@ -290,12 +304,25 @@ function Slide({ video, active, muted, onClose, threadVideoId }: { video: FeedVi
         muted={muted}
         loop={false}
         className="max-h-full max-w-full object-contain"
-        onClick={() => {
-          const el = ref.current;
-          if (!el) return;
-          el.paused ? el.play().catch(() => {}) : el.pause();
-        }}
+        onClick={togglePlay}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
       />
+      {/* Play/Pause indicator + always-visible toggle button */}
+      {showIndicator && (
+        <div className="pointer-events-none absolute inset-0 grid place-items-center">
+          <div className="h-20 w-20 grid place-items-center rounded-full bg-black/50 text-white backdrop-blur animate-in fade-in zoom-in duration-200">
+            {playing ? <Play className="h-10 w-10 fill-current" /> : <Pause className="h-10 w-10 fill-current" />}
+          </div>
+        </div>
+      )}
+      <button
+        onClick={togglePlay}
+        className="absolute top-4 left-4 z-20 h-10 w-10 grid place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 backdrop-blur"
+        aria-label={playing ? "Pause" : "Play"}
+      >
+        {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+      </button>
       {/* Bottom info / actions */}
       <div className="absolute inset-x-0 bottom-0 p-5 pb-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent text-white">
         <div className="flex items-end gap-4 max-w-3xl mx-auto">
