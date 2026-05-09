@@ -1,11 +1,13 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Home, Search, Video, User as UserIcon, LogOut } from "lucide-react";
+import { Home, Search, Video, User as UserIcon, LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import type { ReactNode } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, profile, signOut } = useAuth();
+  const { isAdmin } = useAdminRole();
   const navigate = useNavigate();
 
   return (
@@ -33,6 +35,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
             {user ? (
               <>
+                {isAdmin && (
+                  <Link to="/admin" className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeProps={{ className: "text-primary" }} title="Admin">
+                    <Shield className="h-4 w-4" />
+                  </Link>
+                )}
                 <Button variant="default" size="sm" className="ml-2 rounded-full font-semibold" onClick={() => navigate({ to: "/record" })}>
                   <Video className="h-4 w-4 mr-1" /> Post
                 </Button>
