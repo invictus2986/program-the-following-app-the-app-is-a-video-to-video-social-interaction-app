@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VVideoIdRouteImport } from './routes/v.$videoId'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
@@ -64,6 +65,11 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
   '/admin': typeof AdminIndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/record'
     | '/search'
+    | '/admin/announcements'
     | '/u/$username'
     | '/v/$videoId'
     | '/admin/'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/record'
     | '/search'
+    | '/admin/announcements'
     | '/u/$username'
     | '/v/$videoId'
     | '/admin'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/record'
     | '/search'
+    | '/admin/announcements'
     | '/u/$username'
     | '/v/$videoId'
     | '/admin/'
@@ -209,14 +221,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/announcements': {
+      id: '/admin/announcements'
+      path: '/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
