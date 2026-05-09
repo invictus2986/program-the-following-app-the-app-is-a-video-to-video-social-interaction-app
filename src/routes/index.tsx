@@ -49,6 +49,8 @@ function Index() {
       if (cancelled) return;
       let list = await attachProfiles((data ?? []) as unknown as Omit<FeedVideo, "profiles">[]);
       list = filterByBlocks(list, blocked);
+      // Randomize base order so the Wopla feed surfaces a fresh mix each visit
+      list = [...list].sort(() => Math.random() - 0.5);
       if (followingIds.length) {
         list = [
           ...list.filter((v) => followingIds.includes(v.user_id)),
@@ -58,6 +60,7 @@ function Index() {
       if (tagWeights.size) {
         const score = (v: FeedVideo) =>
           (v.hashtags ?? []).reduce((s, t) => s + (tagWeights.get(t.toLowerCase()) ?? 0), 0);
+        // Stable sort: videos matching past-search tags float up, ties keep random order
         list = [...list].sort((a, b) => score(b) - score(a));
         const sorted = [...tagWeights.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t);
         setTopTags(sorted);
