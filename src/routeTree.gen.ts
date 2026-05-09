@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as RecordRouteImport } from './routes/record'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VVideoIdRouteImport } from './routes/v.$videoId'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -29,6 +30,11 @@ const RecordRoute = RecordRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnouncementsRoute = AnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -49,6 +55,7 @@ const UUsernameRoute = UUsernameRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
@@ -76,16 +85,25 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/announcements'
     | '/auth'
     | '/record'
     | '/search'
     | '/u/$username'
     | '/v/$videoId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/record' | '/search' | '/u/$username' | '/v/$videoId'
+  to:
+    | '/'
+    | '/announcements'
+    | '/auth'
+    | '/record'
+    | '/search'
+    | '/u/$username'
+    | '/v/$videoId'
   id:
     | '__root__'
     | '/'
+    | '/announcements'
     | '/auth'
     | '/record'
     | '/search'
@@ -95,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnnouncementsRoute: typeof AnnouncementsRoute
   AuthRoute: typeof AuthRoute
   RecordRoute: typeof RecordRoute
   SearchRoute: typeof SearchRoute
@@ -125,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/announcements': {
+      id: '/announcements'
+      path: '/announcements'
+      fullPath: '/announcements'
+      preLoaderRoute: typeof AnnouncementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -151,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnnouncementsRoute: AnnouncementsRoute,
   AuthRoute: AuthRoute,
   RecordRoute: RecordRoute,
   SearchRoute: SearchRoute,
@@ -160,3 +187,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
