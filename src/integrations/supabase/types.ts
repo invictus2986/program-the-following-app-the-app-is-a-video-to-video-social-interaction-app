@@ -165,6 +165,33 @@ export type Database = {
         }
         Relationships: []
       }
+      video_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
       video_views: {
         Row: {
           created_at: string
