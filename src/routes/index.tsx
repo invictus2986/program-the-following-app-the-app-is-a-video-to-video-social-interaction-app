@@ -6,7 +6,6 @@ import { VideoGrid, type FeedVideo } from "@/components/VideoGrid";
 import { useAuth } from "@/lib/auth";
 import { attachProfiles } from "@/lib/video";
 import { getBlockedUserIds, filterByBlocks } from "@/lib/blocks";
-import { usePlayer } from "@/components/VideoPlayer";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -22,7 +21,6 @@ function Index() {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const [topTags, setTopTags] = useState<string[]>([]);
-  const player = usePlayer();
   const tagWeightsRef = useRef<Map<string, number>>(new Map());
   const followingIdsRef = useRef<string[]>([]);
   const blockedRef = useRef<Set<string>>(new Set());
@@ -138,7 +136,6 @@ function Index() {
           videos={videos}
           loading={loading}
           emptyHint="No videos yet — be the first to post."
-          onPlay={(i) => player.open({ kind: "list", videos, startIndex: i })}
         />
         <div ref={sentinelRef} className="h-10" />
         {loadingMore && (

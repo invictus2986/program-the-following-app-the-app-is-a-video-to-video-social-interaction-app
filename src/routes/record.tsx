@@ -212,7 +212,14 @@ function RecordPage() {
   return (
     <AppShell>
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <button onClick={() => navigate({ to: ".." as any })} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
+        <button
+          onClick={() =>
+            isReply
+              ? navigate({ to: "/v/$videoId", params: { videoId: replyTo! } })
+              : navigate({ to: ".." as any })
+          }
+          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4"
+        >
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
         <h1 className="font-display text-3xl font-bold mb-1">{isReply ? "Reply with video" : "Post a video"}</h1>

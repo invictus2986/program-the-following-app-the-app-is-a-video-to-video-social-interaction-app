@@ -287,11 +287,15 @@ function WatchPage() {
             {replies.length === 0 && (
               <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
             )}
-            {replies.map((r) => {
-              // back-and-forth: replies on this video between original poster and this reply's author
-              const backForth = replies.filter(
-                (x) => x.user_id === r.user_id || x.user_id === video.user_id,
-              ).length;
+            {[...replies]
+              .map((r) => ({
+                r,
+                depth: replies.filter(
+                  (x) => x.user_id === r.user_id || x.user_id === video.user_id,
+                ).length,
+              }))
+              .sort((a, b) => b.depth - a.depth)
+              .map(({ r, depth: backForth }) => {
               return (
               <button
                 key={r.id}
