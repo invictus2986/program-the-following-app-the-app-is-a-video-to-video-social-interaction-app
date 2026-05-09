@@ -4,10 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { publicUrl, formatDuration, formatCount } from "@/lib/video";
 import { Button } from "@/components/ui/button";
-import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck } from "lucide-react";
+import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { usePlayer, fetchVideosByIds } from "@/components/VideoPlayer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/v/$videoId")({
   component: WatchPage,
@@ -48,6 +61,11 @@ function WatchPage() {
   const [following, setFollowing] = useState(false);
   const [followerStats, setFollowerStats] = useState({ followers: 0, following: 0 });
   const [loading, setLoading] = useState(true);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("inappropriate");
+  const [reportDetails, setReportDetails] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const load = async () => {
@@ -276,6 +294,16 @@ function WatchPage() {
             >
               <Repeat2 className="h-4 w-4 mr-1" /> Reply with video
             </Button>
+            {user && user.id === video.user_id && (
+              <Button onClick={() => setDeleteOpen(true)} variant="outline" className="rounded-full text-destructive hover:text-destructive">
+                <Trash2 className="h-4 w-4 mr-1" /> Delete
+              </Button>
+            )}
+            {user && user.id !== video.user_id && (
+              <Button onClick={() => setReportOpen(true)} variant="ghost" className="rounded-full text-muted-foreground">
+                <Flag className="h-4 w-4 mr-1" /> Report
+              </Button>
+            )}
           </div>
         </div>
 
@@ -351,6 +379,94 @@ function WatchPage() {
           </div>
         </aside>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this video?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the video and its replies. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!user) return;
+                setSubmitting(true);
+                try {
+                  await supabase.storage.from("videos").remove([video.storage_path]).catch(() => {});
+                  const { error } = await supabase.from("videos").delete().eq("id", video.id).eq("user_id", user.id);
+                  if (error) throw error;
+                  toast.success("Video deleted");
+                  navigate({ to: "/u/$username", params: { username: video.profiles?.username ?? "" } });
+                } catch (e: any) {
+                  toast.error(e.message ?? "Failed to delete");
+                } finally {
+                  setSubmitting(false);
+                  setDeleteOpen(false);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {submitting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report this video</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Select value={reportReason} onValueChange={setReportReason}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inappropriate">Inappropriate content</SelectItem>
+                <SelectItem value="harassment">Harassment or bullying</SelectItem>
+                <SelectItem value="spam">Spam or misleading</SelectItem>
+                <SelectItem value="violence">Violence or dangerous acts</SelectItem>
+                <SelectItem value="hate">Hate speech</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            <Textarea
+              placeholder="Add details (optional)"
+              value={reportDetails}
+              onChange={(e) => setReportDetails(e.target.value)}
+              maxLength={1000}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportOpen(false)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                if (!user) return navigate({ to: "/auth" });
+                setSubmitting(true);
+                const { error } = await supabase.from("video_reports").insert({
+                  video_id: video.id,
+                  reporter_id: user.id,
+                  reason: reportReason,
+                  details: reportDetails || null,
+                });
+                setSubmitting(false);
+                if (error) toast.error(error.message);
+                else {
+                  toast.success("Report submitted. Thanks for helping keep Wopla safe.");
+                  setReportOpen(false);
+                  setReportDetails("");
+                  setReportReason("inappropriate");
+                }
+              }}
+              disabled={submitting}
+            >
+              {submitting ? "Submitting…" : "Submit report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
