@@ -62,10 +62,12 @@ function VideoCard({ v, onPlay }: { v: FeedVideo; onPlay?: () => void }) {
         src={src + "#t=0.1"}
         muted
         playsInline
-        preload="metadata"
+        preload="none"
         className="absolute inset-0 h-full w-full object-cover"
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLVideoElement).play().catch(() => {});
+          const el = e.currentTarget as HTMLVideoElement;
+          el.preload = "metadata";
+          el.play().catch(() => {});
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLVideoElement;
