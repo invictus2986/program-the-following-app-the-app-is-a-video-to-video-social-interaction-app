@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Ban, ShieldOff, Trash2, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/admin/users")({
-  component: AdminUsers;
+  component: AdminUsers,
 });
 
 type Profile = { user_id: string; username: string; display_name: string | null; created_at: string };
