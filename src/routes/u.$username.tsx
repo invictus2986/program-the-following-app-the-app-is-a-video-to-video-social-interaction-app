@@ -350,7 +350,6 @@ function ProfilePage() {
               videos={videos}
               loading={loading}
               emptyHint="No videos posted yet."
-              onPlay={(i) => player.open({ kind: "list", videos, startIndex: i })}
             />
           </TabsContent>
           <TabsContent value="responses" className="mt-6">
@@ -358,7 +357,10 @@ function ProfilePage() {
               videos={responses}
               loading={loading}
               emptyHint="No responses to other videos yet."
-              onPlay={(i) => openResponseThread(i)}
+              onPlay={(i) => {
+                const parentId = responseParents[i];
+                if (parentId) navigate({ to: "/v/$videoId", params: { videoId: parentId } });
+              }}
             />
           </TabsContent>
           <TabsContent value="liked" className="mt-6">
@@ -366,7 +368,6 @@ function ProfilePage() {
               videos={liked}
               loading={loading}
               emptyHint="Nothing liked yet."
-              onPlay={(i) => player.open({ kind: "list", videos: liked, startIndex: i })}
             />
           </TabsContent>
         </Tabs>
