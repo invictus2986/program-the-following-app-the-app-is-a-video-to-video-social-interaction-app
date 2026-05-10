@@ -17,23 +17,23 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-b border-border">
         <div className="px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-2xl bg-[image:var(--gradient-mint)] shadow-[var(--shadow-glow)] grid place-items-center">
-              <Video className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
+            <div className="h-7 w-7 rounded-xl bg-[image:var(--gradient-mint)] shadow-[var(--shadow-glow)] grid place-items-center">
+              <Video className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="font-display text-2xl font-bold tracking-tight">WOPLA</span>
+            <span className="font-display text-lg font-bold tracking-tight">WOPLA</span>
           </Link>
           <nav className="flex items-center gap-1">
             {user && profile ? (
-              <Link to="/u/$username" params={{ username: profile.username }} className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeProps={{ className: "text-primary" }}>
-                <Home className="h-4 w-4" /> <span className="hidden sm:inline">Home</span>
+              <Link to="/u/$username" params={{ username: profile.username }} className="px-2 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center" activeProps={{ className: "text-primary" }} title="Home">
+                <Home className="h-4 w-4" />
               </Link>
             ) : (
-              <Link to="/" className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeOptions={{ exact: true }} activeProps={{ className: "text-primary" }}>
-                <Home className="h-4 w-4" /> <span className="hidden sm:inline">Home</span>
+              <Link to="/" className="px-2 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center" activeOptions={{ exact: true }} activeProps={{ className: "text-primary" }} title="Home">
+                <Home className="h-4 w-4" />
               </Link>
             )}
-            <Link to="/search" className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeProps={{ className: "text-primary" }}>
-              <Search className="h-4 w-4" /> <span className="hidden sm:inline">Search</span>
+            <Link to="/search" className="px-2 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center" activeProps={{ className: "text-primary" }} title="Search">
+              <Search className="h-4 w-4" />
             </Link>
             {user ? (
               <>
