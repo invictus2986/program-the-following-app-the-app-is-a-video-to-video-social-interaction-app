@@ -69,6 +69,48 @@ function WatchPage() {
   const [reportDetails, setReportDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [queue, setQueue] = useState<string[]>([]);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+
+  // Load a navigation queue of recent video IDs for swipe nav
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("videos")
+        .select("id")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      setQueue((data ?? []).map((d) => d.id));
+    })();
+  }, []);
+
+  const goToNeighbor = (direction: 1 | -1) => {
+    if (!queue.length) return;
+    const idx = queue.indexOf(videoId);
+    let nextIdx: number;
+    if (idx === -1) {
+      nextIdx = 0;
+    } else {
+      nextIdx = (idx + direction + queue.length) % queue.length;
+    }
+    const nextId = queue[nextIdx];
+    if (!nextId || nextId === videoId) return;
+    navigate({ to: "/v/$videoId", params: { videoId: nextId }, search: {} });
+  };
+
+  const onSwipeStart = (x: number, y: number) => {
+    swipeStart.current = { x, y };
+  };
+  const onSwipeEnd = (x: number, y: number) => {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start) return;
+    const dx = x - start.x;
+    const dy = y - start.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
+    // swipe left (dx<0) -> next, swipe right (dx>0) -> previous
+    goToNeighbor(dx < 0 ? 1 : -1);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -228,7 +270,23 @@ function WatchPage() {
     <AppShell>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <div>
-          <div className="relative rounded-3xl overflow-hidden bg-black h-[80vh] shadow-[var(--shadow-elev)]">
+          <div
+            className="relative rounded-3xl overflow-hidden bg-black h-[80vh] shadow-[var(--shadow-elev)] touch-pan-y select-none"
+            onTouchStart={(e) => {
+              const t = e.touches[0];
+              onSwipeStart(t.clientX, t.clientY);
+            }}
+            onTouchEnd={(e) => {
+              const t = e.changedTouches[0];
+              onSwipeEnd(t.clientX, t.clientY);
+            }}
+            onPointerDown={(e) => {
+              if (e.pointerType === "mouse") onSwipeStart(e.clientX, e.clientY);
+            }}
+            onPointerUp={(e) => {
+              if (e.pointerType === "mouse") onSwipeEnd(e.clientX, e.clientY);
+            }}
+          >
             <video
               ref={videoRef}
               key={src}
