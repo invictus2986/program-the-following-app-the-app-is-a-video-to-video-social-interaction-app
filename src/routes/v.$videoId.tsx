@@ -342,34 +342,11 @@ function WatchPage() {
               return (
               <button
                 key={r.id}
-                onClick={async () => {
-                  // Build a queue: clicked reply first, then other replies from this same video
-                  const ids = [r.id, ...replies.filter((x) => x.id !== r.id).map((x) => x.id)];
-                  // Replies are stored in the `replies` table, not `videos` — fetch them as playable items
-                  // by mapping reply rows into FeedVideo-like shape
-                  const queue = replies
-                    .slice()
-                    .sort((a, b) => (a.id === r.id ? -1 : b.id === r.id ? 1 : 0))
-                    .map((reply) => ({
-                      id: reply.id,
-                      user_id: reply.user_id,
-                      storage_path: reply.storage_path,
-                      caption: null,
-                      hashtags: [] as string[],
-                      duration_seconds: reply.duration_seconds,
-                      views_count: 0,
-                      likes_count: 0,
-                      replies_count: 0,
-                      created_at: reply.created_at,
-                      profiles: reply.profiles,
-                    }));
-                  void ids;
-                  void fetchVideosByIds;
-                  player.open({
-                    kind: "replies",
-                    parentVideoId: video.id,
-                    videos: queue,
-                    startIndex: 0,
+                onClick={() => {
+                  navigate({
+                    to: "/v/$videoId",
+                    params: { videoId: video.id },
+                    search: { reply: r.id },
                   });
                 }}
                 className={`group relative aspect-[9/16] overflow-hidden rounded-2xl border bg-black transition ${activeReply?.id === r.id ? "border-primary" : "border-border hover:border-primary/60"}`}
