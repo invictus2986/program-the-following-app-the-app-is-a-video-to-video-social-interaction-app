@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { usePlayer, fetchVideosByIds } from "@/components/VideoPlayer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,7 +55,6 @@ function WatchPage() {
   const { reply: replyParam } = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const player = usePlayer();
   const [video, setVideo] = useState<Video | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [activeReply, setActiveReply] = useState<Reply | null>(null);
