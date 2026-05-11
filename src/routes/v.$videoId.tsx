@@ -24,6 +24,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export const Route = createFileRoute("/v/$videoId")({
   component: WatchPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    reply: typeof search.reply === "string" ? (search.reply as string) : undefined,
+  }),
 });
 
 type Profile = { username: string; display_name: string | null; avatar_url: string | null };
@@ -50,6 +53,7 @@ type Reply = {
 
 function WatchPage() {
   const { videoId } = Route.useParams();
+  const { reply: replyParam } = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
   const player = usePlayer();
@@ -161,9 +165,20 @@ function WatchPage() {
   useEffect(() => {
     load();
     setEndMenu(false);
-    setActiveReply(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, user?.id]);
+
+  // Sync activeReply with ?reply= search param
+  useEffect(() => {
+    if (!replyParam) {
+      setActiveReply(null);
+      return;
+    }
+    const found = replies.find((r) => r.id === replyParam) ?? null;
+    setActiveReply(found);
+    setEndMenu(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyParam, replies]);
 
   const toggleLike = async () => {
     if (!user) return navigate({ to: "/auth" });
