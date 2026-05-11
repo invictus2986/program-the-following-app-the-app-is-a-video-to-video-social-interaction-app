@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { usePlayer, fetchVideosByIds } from "@/components/VideoPlayer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export const Route = createFileRoute("/v/$videoId")({
   component: WatchPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    reply: typeof search.reply === "string" ? (search.reply as string) : undefined,
+  }),
 });
 
 type Profile = { username: string; display_name: string | null; avatar_url: string | null };
@@ -50,9 +52,9 @@ type Reply = {
 
 function WatchPage() {
   const { videoId } = Route.useParams();
+  const { reply: replyParam } = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const player = usePlayer();
   const [video, setVideo] = useState<Video | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [activeReply, setActiveReply] = useState<Reply | null>(null);
@@ -161,9 +163,20 @@ function WatchPage() {
   useEffect(() => {
     load();
     setEndMenu(false);
-    setActiveReply(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, user?.id]);
+
+  // Sync activeReply with ?reply= search param
+  useEffect(() => {
+    if (!replyParam) {
+      setActiveReply(null);
+      return;
+    }
+    const found = replies.find((r) => r.id === replyParam) ?? null;
+    setActiveReply(found);
+    setEndMenu(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyParam, replies]);
 
   const toggleLike = async () => {
     if (!user) return navigate({ to: "/auth" });
@@ -327,34 +340,11 @@ function WatchPage() {
               return (
               <button
                 key={r.id}
-                onClick={async () => {
-                  // Build a queue: clicked reply first, then other replies from this same video
-                  const ids = [r.id, ...replies.filter((x) => x.id !== r.id).map((x) => x.id)];
-                  // Replies are stored in the `replies` table, not `videos` — fetch them as playable items
-                  // by mapping reply rows into FeedVideo-like shape
-                  const queue = replies
-                    .slice()
-                    .sort((a, b) => (a.id === r.id ? -1 : b.id === r.id ? 1 : 0))
-                    .map((reply) => ({
-                      id: reply.id,
-                      user_id: reply.user_id,
-                      storage_path: reply.storage_path,
-                      caption: null,
-                      hashtags: [] as string[],
-                      duration_seconds: reply.duration_seconds,
-                      views_count: 0,
-                      likes_count: 0,
-                      replies_count: 0,
-                      created_at: reply.created_at,
-                      profiles: reply.profiles,
-                    }));
-                  void ids;
-                  void fetchVideosByIds;
-                  player.open({
-                    kind: "replies",
-                    parentVideoId: video.id,
-                    videos: queue,
-                    startIndex: 0,
+                onClick={() => {
+                  navigate({
+                    to: "/v/$videoId",
+                    params: { videoId: video.id },
+                    search: { reply: r.id },
                   });
                 }}
                 className={`group relative aspect-[9/16] overflow-hidden rounded-2xl border bg-black transition ${activeReply?.id === r.id ? "border-primary" : "border-border hover:border-primary/60"}`}
