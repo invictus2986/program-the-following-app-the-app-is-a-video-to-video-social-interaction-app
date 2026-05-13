@@ -146,7 +146,7 @@ function ProfilePage() {
             .order("created_at", { ascending: false }),
           supabase
             .from("likes")
-            .select("video_id,videos:videos!likes_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at)")
+            .select("video_id,videos:videos!likes_video_id_fkey(id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,thumbnail_url)")
             .eq("user_id", p.user_id)
             .order("created_at", { ascending: false }),
           supabase.from("follows").select("follower_id").eq("following_id", p.user_id),
