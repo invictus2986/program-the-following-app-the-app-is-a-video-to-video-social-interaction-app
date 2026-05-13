@@ -23,7 +23,7 @@ export const Route = createFileRoute("/record")({
 function RecordPage() {
   const { replyTo } = Route.useSearch();
   const isReply = !!replyTo;
-  const maxSeconds = isReply ? 5 * 60 : 10 * 60;
+  const maxSeconds = isReply ? 3 * 60 : 5 * 60;
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -224,7 +224,7 @@ function RecordPage() {
         </button>
         <h1 className="font-display text-3xl font-bold mb-1">{isReply ? "Reply with video" : "Post a video"}</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          {isReply ? "Up to 5 minutes." : "Up to 10 minutes. Add hashtags so people find you."}
+          {isReply ? "Up to 3 minutes." : "Up to 5 minutes. Add hashtags so people find you."}
         </p>
 
         <div className="relative rounded-3xl overflow-hidden bg-black aspect-video shadow-[var(--shadow-elev)]">
