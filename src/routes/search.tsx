@@ -41,7 +41,7 @@ function SearchPage() {
       }
       const { data } = await supabase
         .from("videos")
-        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,thumbnail_url")
         .contains("hashtags", [tag])
         .order("created_at", { ascending: false })
         .limit(60);

@@ -117,7 +117,7 @@ function WatchPage() {
     try {
       const { data: rawVideo, error: videoError } = await supabase
         .from("videos")
-        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,thumbnail_url")
         .eq("id", videoId)
         .maybeSingle();
 

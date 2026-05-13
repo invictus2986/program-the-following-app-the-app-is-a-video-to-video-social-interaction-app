@@ -48,7 +48,7 @@ function Index() {
     const to = from + PAGE_SIZE - 1;
     const { data } = await supabase
       .from("videos")
-      .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at")
+      .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,thumbnail_url")
       .order("created_at", { ascending: false })
       .range(from, to);
     const raw = (data ?? []) as unknown as Omit<FeedVideo, "profiles">[];
