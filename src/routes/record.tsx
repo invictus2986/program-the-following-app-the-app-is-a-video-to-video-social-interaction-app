@@ -11,6 +11,42 @@ import { Circle, Square, Upload, RefreshCw, ArrowLeft } from "lucide-react";
 import { extractHashtags } from "@/lib/video";
 import { toast } from "sonner";
 
+async function captureThumbnail(videoBlob: Blob): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(videoBlob);
+    const v = document.createElement("video");
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.src = url;
+    const cleanup = () => URL.revokeObjectURL(url);
+    const fail = () => { cleanup(); resolve(null); };
+    v.onerror = fail;
+    v.onloadedmetadata = () => {
+      const target = Math.min(1, (v.duration && isFinite(v.duration) ? v.duration : 1) / 2);
+      const onSeeked = () => {
+        try {
+          const w = v.videoWidth || 720;
+          const h = v.videoHeight || 1280;
+          const max = 720;
+          const scale = Math.min(1, max / Math.max(w, h));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(w * scale);
+          canvas.height = Math.round(h * scale);
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return fail();
+          ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((b) => { cleanup(); resolve(b); }, "image/jpeg", 0.8);
+        } catch {
+          fail();
+        }
+      };
+      v.onseeked = onSeeked;
+      try { v.currentTime = target; } catch { fail(); }
+    };
+  });
+}
+
 type Search = { replyTo?: string };
 
 export const Route = createFileRoute("/record")({
