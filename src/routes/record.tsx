@@ -122,7 +122,13 @@ function RecordPage() {
       : MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
       ? "video/webm;codecs=vp8,opus"
       : "video/webm";
-    const rec = new MediaRecorder(streamRef.current, { mimeType: mime });
+    // Compression: cap bitrate to keep files small without re-encoding.
+    // ~1.5 Mbps video + 96 kbps audio ≈ 12 MB / minute (vs 40-80 MB uncompressed).
+    const rec = new MediaRecorder(streamRef.current, {
+      mimeType: mime,
+      videoBitsPerSecond: 1_500_000,
+      audioBitsPerSecond: 96_000,
+    });
     recorderRef.current = rec;
     rec.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
     rec.onstop = () => {
