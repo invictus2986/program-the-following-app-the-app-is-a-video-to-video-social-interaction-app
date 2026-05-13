@@ -13,6 +13,7 @@ export type FeedVideo = {
   likes_count: number;
   replies_count: number;
   created_at: string;
+  thumbnail_url?: string | null;
   profiles: { username: string; display_name: string | null; avatar_url: string | null } | null;
 };
 
@@ -58,11 +59,20 @@ function VideoCard({ v, onPlay }: { v: FeedVideo; onPlay?: () => void }) {
     "group relative aspect-[9/16] overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/60 transition shadow-[var(--shadow-elev)] text-left";
   const inner = (
     <>
+      {v.thumbnail_url ? (
+        <img
+          src={v.thumbnail_url}
+          alt={v.caption ?? "Video thumbnail"}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : null}
       <video
         src={src + "#t=0.1"}
         muted
         playsInline
         preload="none"
+        poster={v.thumbnail_url ?? undefined}
         className="absolute inset-0 h-full w-full object-cover"
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLVideoElement;
