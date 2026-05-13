@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
 import { useAdminRole } from "@/hooks/useAdminRole";
-import { Shield, Megaphone, Flag, BarChart3, Users, UserCog, ChevronLeft } from "lucide-react";
+import { Shield, Megaphone, Flag, BarChart3, Users, UserCog, ChevronLeft, HardDrive } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -38,6 +38,7 @@ function AdminLayout() {
     { to: "/admin/announcements", label: "Announcements", icon: Megaphone, show: permissions.has("post_announcements") },
     { to: "/admin/reports", label: "Reports", icon: Flag, show: permissions.has("view_reports") },
     { to: "/admin/analytics", label: "Analytics", icon: BarChart3, show: permissions.has("view_analytics") },
+    { to: "/admin/storage", label: "Storage", icon: HardDrive, show: permissions.has("view_analytics") },
     { to: "/admin/users", label: "Users", icon: Users, show: permissions.has("manage_users") },
     { to: "/admin/admins", label: "Admins", icon: UserCog, show: role === "super_admin" },
   ];
