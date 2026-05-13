@@ -412,6 +412,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_storage_stats: {
+        Args: never
+        Returns: {
+          per_user: Json
+          total_bytes: number
+          total_objects: number
+        }[]
+      }
       has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
