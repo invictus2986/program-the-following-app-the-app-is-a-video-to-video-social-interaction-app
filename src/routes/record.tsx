@@ -177,6 +177,23 @@ function RecordPage() {
       const { error: upErr } = await supabase.storage.from("videos").upload(path, blob, { contentType: blob.type, upsert: false });
       if (upErr) throw upErr;
 
+      // Capture thumbnail from a real frame (~1s in) and upload as JPEG.
+      let thumbnailUrl: string | null = null;
+      try {
+        const thumb = await captureThumbnail(blob);
+        if (thumb) {
+          const thumbPath = `${folder}/thumbs/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+          const { error: tErr } = await supabase.storage
+            .from("videos")
+            .upload(thumbPath, thumb, { contentType: "image/jpeg", upsert: false });
+          if (!tErr) {
+            thumbnailUrl = supabase.storage.from("videos").getPublicUrl(thumbPath).data.publicUrl;
+          }
+        }
+      } catch {
+        // Non-fatal: video still posts without a thumbnail.
+      }
+
       if (isReply) {
         const { error } = await supabase.from("replies").insert({
           video_id: replyTo!,
@@ -197,6 +214,7 @@ function RecordPage() {
             caption: caption || null,
             hashtags: tags,
             duration_seconds: elapsed,
+            thumbnail_url: thumbnailUrl,
           })
           .select("id")
           .single();
