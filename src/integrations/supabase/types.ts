@@ -40,31 +40,40 @@ export type Database = {
       }
       announcements: {
         Row: {
-          body: string
+          body: string | null
           created_at: string
           created_by: string
           id: string
           pinned: boolean
           title: string
           updated_at: string
+          video_duration_seconds: number | null
+          video_storage_path: string | null
+          video_thumbnail_url: string | null
         }
         Insert: {
-          body: string
+          body?: string | null
           created_at?: string
           created_by: string
           id?: string
           pinned?: boolean
           title: string
           updated_at?: string
+          video_duration_seconds?: number | null
+          video_storage_path?: string | null
+          video_thumbnail_url?: string | null
         }
         Update: {
-          body?: string
+          body?: string | null
           created_at?: string
           created_by?: string
           id?: string
           pinned?: boolean
           title?: string
           updated_at?: string
+          video_duration_seconds?: number | null
+          video_storage_path?: string | null
+          video_thumbnail_url?: string | null
         }
         Relationships: []
       }

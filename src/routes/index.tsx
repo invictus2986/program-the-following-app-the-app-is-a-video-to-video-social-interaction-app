@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { attachProfiles } from "@/lib/video";
 import { getBlockedUserIds, filterByBlocks } from "@/lib/blocks";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { AnnouncementVideoCard } from "@/components/AnnouncementVideoCard";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -120,6 +121,7 @@ function Index() {
     <AppShell>
       <section className="max-w-6xl mx-auto px-4 pt-10 pb-16">
         <AnnouncementBanner />
+        <AnnouncementVideoCard />
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-2xl font-semibold">For you</h2>
         </div>
