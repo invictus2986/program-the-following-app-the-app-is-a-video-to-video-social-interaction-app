@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Megaphone, Play } from "lucide-react";
+import { Megaphone, Play, X } from "lucide-react";
 import { publicUrl, formatDuration } from "@/lib/video";
 
 type VideoAnnouncement = {
@@ -15,6 +15,7 @@ type VideoAnnouncement = {
 export function AnnouncementVideoCard() {
   const [a, setA] = useState<VideoAnnouncement | null>(null);
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -26,12 +27,22 @@ export function AnnouncementVideoCard() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (data) setA(data as VideoAnnouncement);
+      if (!data) return;
+      const seen = typeof window !== "undefined" ? localStorage.getItem("dismissed_video_announcement") : null;
+      if (seen === data.id) return;
+      setA(data as VideoAnnouncement);
     })();
   }, []);
 
-  if (!a) return null;
+  if (!a || dismissed) return null;
   const src = publicUrl(a.video_storage_path);
+
+  const dismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    localStorage.setItem("dismissed_video_announcement", a.id);
+    setDismissed(true);
+  };
 
   return (
     <>
@@ -55,11 +66,23 @@ export function AnnouncementVideoCard() {
         <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wide">
           <Megaphone className="h-3.5 w-3.5" /> Announcement
         </div>
-        {a.video_duration_seconds != null && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 text-white text-[11px] font-semibold">
-            <Play className="h-3 w-3" /> {formatDuration(a.video_duration_seconds)}
-          </div>
-        )}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          {a.video_duration_seconds != null && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-black/60 text-white text-[11px] font-semibold">
+              <Play className="h-3 w-3" /> {formatDuration(a.video_duration_seconds)}
+            </div>
+          )}
+          <span
+            role="button"
+            tabIndex={0}
+            aria-label="Dismiss"
+            onClick={dismiss}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") dismiss(e as unknown as React.MouseEvent); }}
+            className="h-7 w-7 rounded-full bg-black/60 hover:bg-black/80 text-white grid place-items-center cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </span>
+        </div>
         <div className="absolute inset-0 grid place-items-center">
           <div className="h-16 w-16 rounded-full bg-primary/90 grid place-items-center shadow-xl group-hover:scale-110 transition">
             <Play className="h-7 w-7 text-primary-foreground fill-current ml-0.5" />
