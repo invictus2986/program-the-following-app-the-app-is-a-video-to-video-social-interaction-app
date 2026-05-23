@@ -484,6 +484,26 @@ export type Database = {
           video_id: string
         }[]
       }
+      admin_platform_avg_session_seconds: {
+        Args: { _since: string }
+        Returns: {
+          active_users: number
+          avg_seconds_per_user: number
+          total_seconds: number
+        }[]
+      }
+      admin_user_analytics: {
+        Args: { _since: string; _user_id: string }
+        Returns: {
+          sessions: number
+          total_seconds: number
+          unique_videos_viewed: number
+          videos_liked: number
+          videos_posted: number
+          videos_replied: number
+          videos_viewed: number
+        }[]
+      }
       get_storage_stats: {
         Args: never
         Returns: {

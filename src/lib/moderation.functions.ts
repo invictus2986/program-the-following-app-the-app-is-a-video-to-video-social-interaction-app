@@ -77,3 +77,48 @@ export const getAdminVideoInfo = createServerFn({ method: "POST" })
       owner_signup_ip: (row.owner_signup_ip as string | null) ?? null,
     };
   });
+
+/** Admin-only: per-user analytics over a time window (days). */
+export const getAdminUserAnalytics = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ userId: z.string().uuid(), days: z.number().int().min(1).max(365).default(30) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const since = new Date(Date.now() - data.days * 24 * 60 * 60 * 1000).toISOString();
+    const { data: rows, error } = await supabase.rpc("admin_user_analytics", { _user_id: data.userId, _since: since });
+    if (error) throw new Error(error.message);
+    const row = rows?.[0];
+    if (!row) return null;
+    return {
+      videos_viewed: Number(row.videos_viewed),
+      unique_videos_viewed: Number(row.unique_videos_viewed),
+      sessions: Number(row.sessions),
+      total_seconds: Number(row.total_seconds),
+      videos_liked: Number(row.videos_liked),
+      videos_replied: Number(row.videos_replied),
+      videos_posted: Number(row.videos_posted),
+      days: data.days,
+    };
+  });
+
+/** Admin-only: platform-wide average time per active user (days). */
+export const getAdminPlatformAvgTime = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ days: z.number().int().min(1).max(365).default(30) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const since = new Date(Date.now() - data.days * 24 * 60 * 60 * 1000).toISOString();
+    const { data: rows, error } = await supabase.rpc("admin_platform_avg_session_seconds", { _since: since });
+    if (error) throw new Error(error.message);
+    const row = rows?.[0];
+    return {
+      active_users: Number(row?.active_users ?? 0),
+      avg_seconds_per_user: Number(row?.avg_seconds_per_user ?? 0),
+      total_seconds: Number(row?.total_seconds ?? 0),
+      days: data.days,
+    };
+  });

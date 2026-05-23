@@ -16,6 +16,8 @@ import { UserCheck, UserPlus, Pencil, Ban, ShieldOff, Flag } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { FollowListDialog, type FollowListMode } from "@/components/FollowListDialog";
+import { useAdminRole } from "@/hooks/useAdminRole";
+import { AdminUserAnalytics } from "@/components/AdminUserAnalytics";
 
 export const Route = createFileRoute("/u/$username")({
   component: ProfilePage,
@@ -34,6 +36,8 @@ function ProfilePage() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const player = usePlayer();
+  const { permissions } = useAdminRole();
+  const canViewAnalytics = permissions.has("view_analytics");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [videos, setVideos] = useState<FeedVideo[]>([]);
   const [responses, setResponses] = useState<FeedVideo[]>([]);
@@ -376,6 +380,10 @@ function ProfilePage() {
             </div>
           )}
         </div>
+
+        {canViewAnalytics && profile && (
+          <AdminUserAnalytics userId={profile.user_id} />
+        )}
 
         <Tabs defaultValue="videos" className="mt-8">
           <TabsList className="rounded-full bg-muted">
