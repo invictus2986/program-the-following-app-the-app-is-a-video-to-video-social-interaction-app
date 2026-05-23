@@ -6,6 +6,7 @@ import { publicUrl, formatDuration, formatCount } from "@/lib/video";
 import { Button } from "@/components/ui/button";
 import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -55,6 +56,8 @@ function WatchPage() {
   const { reply: replyParam } = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { permissions } = useAdminRole();
+  const canManage = permissions.has("manage_users");
   const [video, setVideo] = useState<Video | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [activeReply, setActiveReply] = useState<Reply | null>(null);
@@ -64,6 +67,8 @@ function WatchPage() {
   const [followerStats, setFollowerStats] = useState({ followers: 0, following: 0 });
   const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [replyToDelete, setReplyToDelete] = useState<Reply | null>(null);
+  const [deletingReply, setDeletingReply] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("inappropriate");
   const [reportDetails, setReportDetails] = useState("");
