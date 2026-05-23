@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getAdminPlatformAvgTime } from "@/lib/moderation.functions";
 
 export const Route = createFileRoute("/admin/analytics")({
   component: AdminAnalytics,
@@ -22,6 +23,14 @@ type Stats = {
   avgViewsPerSession: number;
 };
 
+function fmtTime(sec: number) {
+  if (sec < 60) return `${Math.round(sec)}s`;
+  const m = Math.round(sec / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
+}
+
 function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
     <div className="rounded-2xl border border-border p-4">
@@ -35,6 +44,7 @@ function StatCard({ label, value, hint }: { label: string; value: string | numbe
 function AdminAnalytics() {
   const [s, setS] = useState<Stats | null>(null);
   const [topVideos, setTopVideos] = useState<Array<{ id: string; caption: string | null; views_count: number; likes_count: number }>>([]);
+  const [avgTime, setAvgTime] = useState<{ d1?: number; d7?: number; d30?: number } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -87,6 +97,21 @@ function AdminAnalytics() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const [a1, a7, a30] = await Promise.all([
+          getAdminPlatformAvgTime({ data: { days: 1 } }),
+          getAdminPlatformAvgTime({ data: { days: 7 } }),
+          getAdminPlatformAvgTime({ data: { days: 30 } }),
+        ]);
+        setAvgTime({ d1: a1.avg_seconds_per_user, d7: a7.avg_seconds_per_user, d30: a30.avg_seconds_per_user });
+      } catch {
+        setAvgTime({});
+      }
+    })();
+  }, []);
+
   if (!s) return <p className="text-sm text-muted-foreground">Loading analytics…</p>;
 
   return (
@@ -112,6 +137,14 @@ function AdminAnalytics() {
           <StatCard label="Active users (30d)" value={s.active30d} />
           <StatCard label="New signups (7d)" value={s.newUsers7d} />
           <StatCard label="New videos (7d)" value={s.newVideos7d} />
+        </div>
+      </div>
+      <div>
+        <h2 className="text-sm font-semibold mb-2">Avg time on platform per user</h2>
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard label="Last 24h" value={avgTime?.d1 != null ? fmtTime(avgTime.d1) : "…"} />
+          <StatCard label="Last 7 days" value={avgTime?.d7 != null ? fmtTime(avgTime.d7) : "…"} />
+          <StatCard label="Last 30 days" value={avgTime?.d30 != null ? fmtTime(avgTime.d30) : "…"} />
         </div>
       </div>
       <div>
