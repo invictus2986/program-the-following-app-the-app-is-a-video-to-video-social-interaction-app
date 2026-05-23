@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Pin, PinOff, Trash2, Video, X } from "lucide-react";
+import { Circle, Square, Upload, Camera } from "lucide-react";
 
 export const Route = createFileRoute("/admin/announcements")({
   component: AdminAnnouncements,
@@ -80,6 +81,87 @@ function AdminAnnouncements() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<"upload" | "record">("upload");
+  const [streaming, setStreaming] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const liveRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const timerRef = useRef<number | null>(null);
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (liveRef.current) liveRef.current.srcObject = null;
+    setStreaming(false);
+  };
+
+  useEffect(() => () => { stopCamera(); if (timerRef.current) window.clearInterval(timerRef.current); }, []);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: true,
+      });
+      streamRef.current = stream;
+      if (liveRef.current) {
+        liveRef.current.srcObject = stream;
+        liveRef.current.muted = true;
+        await liveRef.current.play().catch(() => {});
+      }
+      setStreaming(true);
+    } catch (e) {
+      toast.error("Couldn't access camera/microphone.");
+    }
+  };
+
+  const pickMime = (): string => {
+    const candidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
+    for (const c of candidates) {
+      if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported?.(c)) return c;
+    }
+    return "";
+  };
+
+  const startRecording = () => {
+    if (!streamRef.current) return;
+    chunksRef.current = [];
+    const mimeType = pickMime();
+    const rec = new MediaRecorder(streamRef.current, mimeType ? { mimeType } : undefined);
+    rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
+    rec.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
+      const ext = (rec.mimeType || "").includes("mp4") ? "mp4" : "webm";
+      const file = new File([blob], `announcement-${Date.now()}.${ext}`, { type: blob.type });
+      onPickVideo(file);
+      stopCamera();
+    };
+    rec.start();
+    recorderRef.current = rec;
+    setRecording(true);
+    setElapsed(0);
+    timerRef.current = window.setInterval(() => {
+      setElapsed((s) => {
+        const next = s + 1;
+        if (next >= 180) { stopRecording(); }
+        return next;
+      });
+    }, 1000);
+  };
+
+  const stopRecording = () => {
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.stop();
+    }
+    recorderRef.current = null;
+    setRecording(false);
+    if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
+  };
 
   const load = async () => {
     const { data } = await supabase
@@ -175,13 +257,71 @@ function AdminAnnouncements() {
         <div className="space-y-2">
           <label className="text-sm font-medium flex items-center gap-2"><Video className="h-4 w-4" /> Video announcement (optional)</label>
           <p className="text-xs text-muted-foreground">If attached, this will appear at the top of every user's feed until unpinned.</p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="video/*"
-            onChange={(e) => onPickVideo(e.target.files?.[0] ?? null)}
-            className="text-sm"
-          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={mode === "upload" ? "default" : "outline"}
+              onClick={() => { stopCamera(); setMode("upload"); }}
+            >
+              <Upload className="h-3.5 w-3.5 mr-1" /> Upload
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={mode === "record" ? "default" : "outline"}
+              onClick={() => { setMode("record"); onPickVideo(null); if (fileRef.current) fileRef.current.value = ""; }}
+            >
+              <Camera className="h-3.5 w-3.5 mr-1" /> Record
+            </Button>
+          </div>
+          {mode === "upload" && (
+            <input
+              ref={fileRef}
+              type="file"
+              accept="video/*"
+              onChange={(e) => onPickVideo(e.target.files?.[0] ?? null)}
+              className="text-sm"
+            />
+          )}
+          {mode === "record" && !videoPreview && (
+            <div className="space-y-2">
+              <div className="relative rounded-lg overflow-hidden bg-black aspect-video max-w-md">
+                <video ref={liveRef} playsInline className="absolute inset-0 h-full w-full object-cover" />
+                {!streaming && (
+                  <div className="absolute inset-0 grid place-items-center text-white/70 text-sm">
+                    Camera off
+                  </div>
+                )}
+                {recording && (
+                  <div className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-rose-600 text-white text-xs font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" /> REC {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,"0")}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {!streaming && (
+                  <Button type="button" size="sm" onClick={startCamera}>
+                    <Camera className="h-3.5 w-3.5 mr-1" /> Enable camera
+                  </Button>
+                )}
+                {streaming && !recording && (
+                  <Button type="button" size="sm" onClick={startRecording} className="bg-rose-600 hover:bg-rose-700 text-white">
+                    <Circle className="h-3.5 w-3.5 mr-1 fill-current" /> Start recording
+                  </Button>
+                )}
+                {recording && (
+                  <Button type="button" size="sm" variant="outline" onClick={stopRecording}>
+                    <Square className="h-3.5 w-3.5 mr-1 fill-current" /> Stop
+                  </Button>
+                )}
+                {streaming && !recording && (
+                  <Button type="button" size="sm" variant="ghost" onClick={stopCamera}>Cancel</Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Max 3 minutes. Recording stops automatically at the limit.</p>
+            </div>
+          )}
           {videoPreview && (
             <div className="relative inline-block">
               <video src={videoPreview} controls className="max-h-48 rounded-lg" />
