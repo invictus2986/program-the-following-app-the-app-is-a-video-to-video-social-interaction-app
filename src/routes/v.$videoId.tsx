@@ -426,12 +426,64 @@ function WatchPage() {
                   <p className="font-semibold text-xs truncate">@{r.profiles?.username ?? "unknown"}</p>
                   <p className="text-[10px] opacity-80">{formatDuration(r.duration_seconds)}</p>
                 </div>
+                {canManage && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Delete reply"
+                    onClick={(e) => { e.stopPropagation(); setReplyToDelete(r); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setReplyToDelete(r); } }}
+                    className="absolute top-2 left-2 h-7 w-7 grid place-items-center rounded-full bg-destructive text-destructive-foreground shadow-[var(--shadow-elev)] hover:bg-destructive/90"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </span>
+                )}
               </button>
               );
             })}
           </div>
         </aside>
       </div>
+
+      <AlertDialog open={!!replyToDelete} onOpenChange={(v) => !v && setReplyToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this comment video?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes only this reply video. The original video and its other replies are kept. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingReply}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingReply}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!replyToDelete) return;
+                setDeletingReply(true);
+                try {
+                  if (replyToDelete.storage_path) {
+                    await supabase.storage.from("videos").remove([replyToDelete.storage_path]).catch(() => {});
+                  }
+                  const { error } = await supabase.from("replies").delete().eq("id", replyToDelete.id);
+                  if (error) throw error;
+                  setReplies((prev) => prev.filter((x) => x.id !== replyToDelete.id));
+                  if (activeReply?.id === replyToDelete.id) setActiveReply(null);
+                  toast.success("Comment video deleted");
+                  setReplyToDelete(null);
+                } catch (err: any) {
+                  toast.error(err.message ?? "Failed to delete");
+                } finally {
+                  setDeletingReply(false);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingReply ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
