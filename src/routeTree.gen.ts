@@ -20,6 +20,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VVideoIdRouteImport } from './routes/v.$videoId'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminUserReportsRouteImport } from './routes/admin.user-reports'
 import { Route as AdminStorageRouteImport } from './routes/admin.storage'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
@@ -81,6 +82,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminUserReportsRoute = AdminUserReportsRouteImport.update({
+  id: '/user-reports',
+  path: '/user-reports',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminStorageRoute = AdminStorageRouteImport.update({
   id: '/storage',
   path: '/storage',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/storage': typeof AdminStorageRoute
+  '/admin/user-reports': typeof AdminUserReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/storage': typeof AdminStorageRoute
+  '/admin/user-reports': typeof AdminUserReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/storage': typeof AdminStorageRoute
+  '/admin/user-reports': typeof AdminUserReportsRoute
   '/admin/users': typeof AdminUsersRoute
   '/u/$username': typeof UUsernameRoute
   '/v/$videoId': typeof VVideoIdRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/reports'
     | '/admin/storage'
+    | '/admin/user-reports'
     | '/admin/users'
     | '/u/$username'
     | '/v/$videoId'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/reports'
     | '/admin/storage'
+    | '/admin/user-reports'
     | '/admin/users'
     | '/u/$username'
     | '/v/$videoId'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/reports'
     | '/admin/storage'
+    | '/admin/user-reports'
     | '/admin/users'
     | '/u/$username'
     | '/v/$videoId'
@@ -308,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/user-reports': {
+      id: '/admin/user-reports'
+      path: '/user-reports'
+      fullPath: '/admin/user-reports'
+      preLoaderRoute: typeof AdminUserReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/storage': {
       id: '/admin/storage'
       path: '/storage'
@@ -352,6 +371,7 @@ interface AdminRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminStorageRoute: typeof AdminStorageRoute
+  AdminUserReportsRoute: typeof AdminUserReportsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -362,6 +382,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminStorageRoute: AdminStorageRoute,
+  AdminUserReportsRoute: AdminUserReportsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
