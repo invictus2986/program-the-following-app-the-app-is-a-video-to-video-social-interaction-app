@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Pin, PinOff, Trash2, Video, X } from "lucide-react";
-import { Circle, Square, Upload, Camera } from "lucide-react";
+import { Circle, Square, Camera } from "lucide-react";
 
 export const Route = createFileRoute("/admin/announcements")({
   component: AdminAnnouncements,
@@ -80,8 +80,6 @@ function AdminAnnouncements() {
   const [saving, setSaving] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<"upload" | "record">("upload");
   const [streaming, setStreaming] = useState(false);
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -225,7 +223,6 @@ function AdminAnnouncements() {
       if (error) throw error;
       setTitle(""); setBody(""); setPinned(true);
       onPickVideo(null);
-      if (fileRef.current) fileRef.current.value = "";
       toast.success("Announcement posted");
       load();
     } catch (e) {
@@ -255,36 +252,9 @@ function AdminAnnouncements() {
         <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
         <Textarea placeholder="Body (optional if you attach a video)…" value={body} onChange={(e) => setBody(e.target.value)} rows={4} maxLength={2000} />
         <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2"><Video className="h-4 w-4" /> Video announcement (optional)</label>
-          <p className="text-xs text-muted-foreground">If attached, this will appear at the top of every user's feed until unpinned.</p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant={mode === "upload" ? "default" : "outline"}
-              onClick={() => { stopCamera(); setMode("upload"); }}
-            >
-              <Upload className="h-3.5 w-3.5 mr-1" /> Upload
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={mode === "record" ? "default" : "outline"}
-              onClick={() => { setMode("record"); onPickVideo(null); if (fileRef.current) fileRef.current.value = ""; }}
-            >
-              <Camera className="h-3.5 w-3.5 mr-1" /> Record
-            </Button>
-          </div>
-          {mode === "upload" && (
-            <input
-              ref={fileRef}
-              type="file"
-              accept="video/*"
-              onChange={(e) => onPickVideo(e.target.files?.[0] ?? null)}
-              className="text-sm"
-            />
-          )}
-          {mode === "record" && !videoPreview && (
+          <label className="text-sm font-medium flex items-center gap-2"><Video className="h-4 w-4" /> Record video announcement (optional)</label>
+          <p className="text-xs text-muted-foreground">Record directly from your camera. If attached, this will appear at the top of every user's feed until unpinned. Uploads from your device are not allowed.</p>
+          {!videoPreview && (
             <div className="space-y-2">
               <div className="relative rounded-lg overflow-hidden bg-black aspect-video max-w-md">
                 <video ref={liveRef} playsInline className="absolute inset-0 h-full w-full object-cover" />
@@ -327,7 +297,7 @@ function AdminAnnouncements() {
               <video src={videoPreview} controls className="max-h-48 rounded-lg" />
               <button
                 type="button"
-                onClick={() => { onPickVideo(null); if (fileRef.current) fileRef.current.value = ""; }}
+                onClick={() => onPickVideo(null)}
                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground grid place-items-center"
                 aria-label="Remove video"
               >
