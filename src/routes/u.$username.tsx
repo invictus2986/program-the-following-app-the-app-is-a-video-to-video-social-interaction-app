@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useAuth } from "@/lib/auth";
 import { attachProfiles, formatCount } from "@/lib/video";
 import { usePlayer } from "@/components/VideoPlayer";
-import { UserCheck, UserPlus, Pencil, Ban, ShieldOff } from "lucide-react";
+import { UserCheck, UserPlus, Pencil, Ban, ShieldOff, Flag } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/u/$username")({
@@ -48,6 +49,27 @@ function ProfilePage() {
   const [editBio, setEditBio] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [blockList, setBlockList] = useState<{ user_id: string; username: string; display_name: string | null }[]>([]);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("inappropriate");
+  const [reportDetails, setReportDetails] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  const submitReport = async () => {
+    if (!user || !profile) return navigate({ to: "/auth" });
+    setSubmittingReport(true);
+    const { error } = await supabase.from("user_reports").insert({
+      reported_user_id: profile.user_id,
+      reporter_id: user.id,
+      reason: reportReason,
+      details: reportDetails.trim() || null,
+    });
+    setSubmittingReport(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Report submitted. Thanks for keeping WOPLA safe.");
+    setReportOpen(false);
+    setReportDetails("");
+    setReportReason("inappropriate");
+  };
 
   const openEdit = () => {
     setEditDisplayName(profile?.display_name ?? "");
@@ -335,6 +357,9 @@ function ProfilePage() {
               <Button onClick={blockUser} variant="outline" size="sm" className="rounded-full text-destructive hover:text-destructive">
                 <Ban className="h-4 w-4 mr-1" /> Block
               </Button>
+              <Button onClick={() => setReportOpen(true)} variant="ghost" size="sm" className="rounded-full text-muted-foreground">
+                <Flag className="h-4 w-4 mr-1" /> Report
+              </Button>
             </div>
           )}
         </div>
@@ -407,6 +432,37 @@ function ProfilePage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)} disabled={savingProfile}>Cancel</Button>
             <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Saving..." : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report @{profile?.username}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Reason</Label>
+              <Select value={reportReason} onValueChange={setReportReason}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="inappropriate">Inappropriate behavior</SelectItem>
+                  <SelectItem value="harassment">Harassment or bullying</SelectItem>
+                  <SelectItem value="spam">Spam or scam</SelectItem>
+                  <SelectItem value="impersonation">Impersonation</SelectItem>
+                  <SelectItem value="hate_speech">Hate speech</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="rdet">Details (optional)</Label>
+              <Textarea id="rdet" value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} maxLength={500} rows={3} placeholder="Tell us what's going on..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportOpen(false)} disabled={submittingReport}>Cancel</Button>
+            <Button onClick={submitReport} disabled={submittingReport}>{submittingReport ? "Submitting..." : "Submit report"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
