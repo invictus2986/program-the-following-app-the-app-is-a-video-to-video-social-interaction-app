@@ -180,6 +180,8 @@ export type Database = {
           deleted_at: string | null
           display_name: string | null
           id: string
+          last_ip: unknown
+          signup_ip: unknown
           updated_at: string
           user_id: string
           username: string
@@ -191,6 +193,8 @@ export type Database = {
           deleted_at?: string | null
           display_name?: string | null
           id?: string
+          last_ip?: unknown
+          signup_ip?: unknown
           updated_at?: string
           user_id: string
           username: string
@@ -202,6 +206,8 @@ export type Database = {
           deleted_at?: string | null
           display_name?: string | null
           id?: string
+          last_ip?: unknown
+          signup_ip?: unknown
           updated_at?: string
           user_id?: string
           username?: string
@@ -213,6 +219,7 @@ export type Database = {
           created_at: string
           duration_seconds: number | null
           id: string
+          posted_ip: unknown
           storage_path: string
           user_id: string
           video_id: string
@@ -221,6 +228,7 @@ export type Database = {
           created_at?: string
           duration_seconds?: number | null
           id?: string
+          posted_ip?: unknown
           storage_path: string
           user_id: string
           video_id: string
@@ -229,6 +237,7 @@ export type Database = {
           created_at?: string
           duration_seconds?: number | null
           id?: string
+          posted_ip?: unknown
           storage_path?: string
           user_id?: string
           video_id?: string
@@ -407,6 +416,7 @@ export type Database = {
           hashtags: string[]
           id: string
           likes_count: number
+          posted_ip: unknown
           reach_target: number
           replies_count: number
           storage_path: string
@@ -422,6 +432,7 @@ export type Database = {
           hashtags?: string[]
           id?: string
           likes_count?: number
+          posted_ip?: unknown
           reach_target?: number
           replies_count?: number
           storage_path: string
@@ -437,6 +448,7 @@ export type Database = {
           hashtags?: string[]
           id?: string
           likes_count?: number
+          posted_ip?: unknown
           reach_target?: number
           replies_count?: number
           storage_path?: string
@@ -451,6 +463,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_get_user_info: {
+        Args: { _user_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          last_ip: unknown
+          signup_ip: unknown
+          user_id: string
+        }[]
+      }
+      admin_get_video_info: {
+        Args: { _video_id: string }
+        Returns: {
+          owner_email: string
+          owner_id: string
+          owner_last_ip: unknown
+          owner_signup_ip: unknown
+          posted_ip: unknown
+          video_id: string
+        }[]
+      }
       get_storage_stats: {
         Args: never
         Returns: {
