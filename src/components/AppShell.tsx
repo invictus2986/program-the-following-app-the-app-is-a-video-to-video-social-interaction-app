@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Home, Search, Video, User as UserIcon, LogOut, Shield, Bell } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -8,9 +10,29 @@ import type { ReactNode } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, profile, signOut } = useAuth();
-  const { isAdmin } = useAdminRole();
+  const { isAdmin, permissions } = useAdminRole();
   const { count: unread } = useUnreadCount();
+  const [reportCount, setReportCount] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAdmin || !permissions.has("view_reports")) { setReportCount(0); return; }
+    let cancelled = false;
+    const refresh = async () => {
+      const [{ count: vc }, { count: uc }] = await Promise.all([
+        supabase.from("video_reports").select("*", { count: "exact", head: true }),
+        supabase.from("user_reports").select("*", { count: "exact", head: true }),
+      ]);
+      if (!cancelled) setReportCount((vc ?? 0) + (uc ?? 0));
+    };
+    refresh();
+    const channel = supabase
+      .channel("admin-report-count")
+      .on("postgres_changes", { event: "*", schema: "public", table: "video_reports" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_reports" }, refresh)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [isAdmin, permissions]);
 
   return (
     <div className="min-h-screen flex flex-col mx-auto w-full max-w-[440px] border-x border-border bg-background">
@@ -51,8 +73,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                   )}
                 </Link>
                 {isAdmin && (
-                  <Link to="/admin" className="px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeProps={{ className: "text-primary" }} title="Admin">
+                  <Link to="/admin" className="relative px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium flex items-center gap-2" activeProps={{ className: "text-primary" }} title="Admin">
                     <Shield className="h-4 w-4" />
+                    {reportCount > 0 && (
+                      <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-[10px] font-bold text-white grid place-items-center">
+                        {reportCount > 99 ? "99+" : reportCount}
+                      </span>
+                    )}
                   </Link>
                 )}
                 <Button variant="default" size="sm" className="ml-2 rounded-full font-semibold" onClick={() => navigate({ to: "/record" })}>
