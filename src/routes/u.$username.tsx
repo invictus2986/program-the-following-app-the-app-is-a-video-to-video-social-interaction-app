@@ -15,6 +15,7 @@ import { usePlayer } from "@/components/VideoPlayer";
 import { UserCheck, UserPlus, Pencil, Ban, ShieldOff, Flag } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { FollowListDialog, type FollowListMode } from "@/components/FollowListDialog";
 
 export const Route = createFileRoute("/u/$username")({
   component: ProfilePage,
@@ -53,6 +54,14 @@ function ProfilePage() {
   const [reportReason, setReportReason] = useState("inappropriate");
   const [reportDetails, setReportDetails] = useState("");
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [listMode, setListMode] = useState<FollowListMode>("followers");
+
+  const isOwn = !!(user && profile && user.id === profile.user_id);
+  const openList = (mode: FollowListMode) => {
+    setListMode(mode);
+    setListOpen(true);
+  };
 
   const submitReport = async () => {
     if (!user || !profile) return navigate({ to: "/auth" });
@@ -343,8 +352,12 @@ function ProfilePage() {
             <h1 className="font-display text-3xl font-bold truncate">{profile?.display_name ?? profile?.username}</h1>
             <p className="text-muted-foreground text-sm">@{profile?.username}</p>
             <div className="flex gap-5 mt-2 text-sm">
-              <span><strong>{formatCount(stats.followers)}</strong> <span className="text-muted-foreground">followers</span></span>
-              <span><strong>{formatCount(stats.following)}</strong> <span className="text-muted-foreground">following</span></span>
+              <button onClick={() => openList("followers")} className="hover:underline">
+                <strong>{formatCount(stats.followers)}</strong> <span className="text-muted-foreground">followers</span>
+              </button>
+              <button onClick={() => openList("following")} className="hover:underline">
+                <strong>{formatCount(stats.following)}</strong> <span className="text-muted-foreground">following</span>
+              </button>
               <span><strong>{videos.length}</strong> <span className="text-muted-foreground">videos</span></span>
             </div>
             {profile?.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
@@ -466,6 +479,23 @@ function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {profile && (
+        <FollowListDialog
+          open={listOpen}
+          onOpenChange={setListOpen}
+          profileUserId={profile.user_id}
+          profileUsername={profile.username}
+          mode={listMode}
+          isOwnProfile={isOwn}
+          onChanged={() => {
+            setStats((s) => ({
+              ...s,
+              followers: listMode === "followers" ? Math.max(0, s.followers - 1) : s.followers,
+              following: listMode === "following" ? Math.max(0, s.following - 1) : s.following,
+            }));
+          }}
+        />
+      )}
     </AppShell>
   );
 }
