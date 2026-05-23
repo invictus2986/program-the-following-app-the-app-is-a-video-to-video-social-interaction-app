@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, ExternalLink, Ban, ShieldOff, Clock } from "lucide-react";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { AdminUserInfo } from "@/components/AdminUserInfo";
 
 export const Route = createFileRoute("/admin/user-reports")({
   component: AdminUserReports,
@@ -115,6 +116,7 @@ function AdminUserReports() {
               {banned && <span className="text-destructive"> · currently suspended</span>}
             </p>
             {r.details && <p className="text-sm whitespace-pre-wrap break-words mb-3">{r.details}</p>}
+            <AdminUserInfo userId={r.reported_user_id} />
             <div className="flex gap-2 flex-wrap">
               {reported?.username && (
                 <Link to="/u/$username" params={{ username: reported.username }}>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, ExternalLink } from "lucide-react";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { AdminVideoInfo } from "@/components/AdminUserInfo";
 
 export const Route = createFileRoute("/admin/reports")({
   component: AdminReports,
@@ -80,6 +81,7 @@ function AdminReports() {
             By @{profiles[r.reporter_id]?.username ?? r.reporter_id.slice(0, 8)}
           </p>
           {r.details && <p className="text-sm whitespace-pre-wrap break-words mb-3">{r.details}</p>}
+          <AdminVideoInfo videoId={r.video_id} />
           <div className="flex gap-2 flex-wrap">
             <Link to="/v/$videoId" params={{ videoId: r.video_id }} className="inline-flex">
               <Button size="sm" variant="outline">
