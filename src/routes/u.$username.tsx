@@ -479,6 +479,23 @@ function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {profile && (
+        <FollowListDialog
+          open={listOpen}
+          onOpenChange={setListOpen}
+          profileUserId={profile.user_id}
+          profileUsername={profile.username}
+          mode={listMode}
+          isOwnProfile={isOwn}
+          onChanged={() => {
+            setStats((s) => ({
+              ...s,
+              followers: listMode === "followers" ? Math.max(0, s.followers - 1) : s.followers,
+              following: listMode === "following" ? Math.max(0, s.following - 1) : s.following,
+            }));
+          }}
+        />
+      )}
     </AppShell>
   );
 }
