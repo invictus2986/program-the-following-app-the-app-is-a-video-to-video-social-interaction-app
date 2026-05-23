@@ -231,13 +231,17 @@ function RecordPage() {
       }
 
       if (isReply) {
-        const { error } = await supabase.from("replies").insert({
+        const { data: rep, error } = await supabase.from("replies").insert({
           video_id: replyTo!,
           user_id: user.id,
           storage_path: path,
           duration_seconds: elapsed,
-        });
+        }).select("id").single();
         if (error) throw error;
+        try {
+          const { recordPostIp } = await import("@/lib/moderation.functions");
+          await recordPostIp({ data: { replyId: rep.id } });
+        } catch {}
         toast.success("Reply posted");
         navigate({ to: "/v/$videoId", params: { videoId: replyTo! } });
       } else {
@@ -255,6 +259,10 @@ function RecordPage() {
           .select("id")
           .single();
         if (error) throw error;
+        try {
+          const { recordPostIp } = await import("@/lib/moderation.functions");
+          await recordPostIp({ data: { videoId: data.id } });
+        } catch {}
         toast.success("Posted!");
         navigate({ to: "/v/$videoId", params: { videoId: data.id } });
       }
