@@ -48,7 +48,14 @@ export const getAdminUserInfo = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabase.rpc("admin_get_user_info", { _user_id: data.userId });
     if (error) throw new Error(error.message);
     const row = rows?.[0] ?? null;
-    return row;
+    if (!row) return null;
+    return {
+      user_id: row.user_id as string,
+      email: row.email as string | null,
+      signup_ip: (row.signup_ip as string | null) ?? null,
+      last_ip: (row.last_ip as string | null) ?? null,
+      created_at: row.created_at as string,
+    };
   });
 
 /** Admin-only: returns owner email + IPs for a video. */
@@ -60,5 +67,13 @@ export const getAdminVideoInfo = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabase.rpc("admin_get_video_info", { _video_id: data.videoId });
     if (error) throw new Error(error.message);
     const row = rows?.[0] ?? null;
-    return row;
+    if (!row) return null;
+    return {
+      video_id: row.video_id as string,
+      owner_id: row.owner_id as string,
+      owner_email: row.owner_email as string | null,
+      posted_ip: (row.posted_ip as string | null) ?? null,
+      owner_last_ip: (row.owner_last_ip as string | null) ?? null,
+      owner_signup_ip: (row.owner_signup_ip as string | null) ?? null,
+    };
   });
