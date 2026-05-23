@@ -6,6 +6,7 @@ import { publicUrl, formatDuration, formatCount } from "@/lib/video";
 import { Button } from "@/components/ui/button";
 import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -55,6 +56,8 @@ function WatchPage() {
   const { reply: replyParam } = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { permissions } = useAdminRole();
+  const canManage = permissions.has("manage_users");
   const [video, setVideo] = useState<Video | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [activeReply, setActiveReply] = useState<Reply | null>(null);
@@ -64,6 +67,8 @@ function WatchPage() {
   const [followerStats, setFollowerStats] = useState({ followers: 0, following: 0 });
   const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [replyToDelete, setReplyToDelete] = useState<Reply | null>(null);
+  const [deletingReply, setDeletingReply] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("inappropriate");
   const [reportDetails, setReportDetails] = useState("");
@@ -421,12 +426,64 @@ function WatchPage() {
                   <p className="font-semibold text-xs truncate">@{r.profiles?.username ?? "unknown"}</p>
                   <p className="text-[10px] opacity-80">{formatDuration(r.duration_seconds)}</p>
                 </div>
+                {canManage && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Delete reply"
+                    onClick={(e) => { e.stopPropagation(); setReplyToDelete(r); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setReplyToDelete(r); } }}
+                    className="absolute top-2 left-2 h-7 w-7 grid place-items-center rounded-full bg-destructive text-destructive-foreground shadow-[var(--shadow-elev)] hover:bg-destructive/90"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </span>
+                )}
               </button>
               );
             })}
           </div>
         </aside>
       </div>
+
+      <AlertDialog open={!!replyToDelete} onOpenChange={(v) => !v && setReplyToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this comment video?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes only this reply video. The original video and its other replies are kept. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingReply}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingReply}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!replyToDelete) return;
+                setDeletingReply(true);
+                try {
+                  if (replyToDelete.storage_path) {
+                    await supabase.storage.from("videos").remove([replyToDelete.storage_path]).catch(() => {});
+                  }
+                  const { error } = await supabase.from("replies").delete().eq("id", replyToDelete.id);
+                  if (error) throw error;
+                  setReplies((prev) => prev.filter((x) => x.id !== replyToDelete.id));
+                  if (activeReply?.id === replyToDelete.id) setActiveReply(null);
+                  toast.success("Comment video deleted");
+                  setReplyToDelete(null);
+                } catch (err: any) {
+                  toast.error(err.message ?? "Failed to delete");
+                } finally {
+                  setDeletingReply(false);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingReply ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
@@ -443,8 +500,14 @@ function WatchPage() {
                 if (!user) return;
                 setSubmitting(true);
                 try {
-                  await supabase.storage.from("videos").remove([video.storage_path]).catch(() => {});
-                  const { error } = await supabase.from("videos").delete().eq("id", video.id).eq("user_id", user.id);
+                  // Best-effort: remove the video file + all reply files from storage
+                  const { data: replyRows } = await supabase
+                    .from("replies").select("storage_path").eq("video_id", video.id);
+                  const paths = [video.storage_path, ...((replyRows ?? []).map((r: any) => r.storage_path).filter(Boolean))];
+                  await supabase.storage.from("videos").remove(paths).catch(() => {});
+                  // RLS allows the owner OR an admin with manage_users; the trigger
+                  // cascades reply rows automatically.
+                  const { error } = await supabase.from("videos").delete().eq("id", video.id);
                   if (error) throw error;
                   toast.success("Video deleted");
                   navigate({ to: "/u/$username", params: { username: video.profiles?.username ?? "" } });
