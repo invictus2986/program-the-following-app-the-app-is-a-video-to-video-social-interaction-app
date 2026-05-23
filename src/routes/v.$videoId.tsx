@@ -448,8 +448,14 @@ function WatchPage() {
                 if (!user) return;
                 setSubmitting(true);
                 try {
-                  await supabase.storage.from("videos").remove([video.storage_path]).catch(() => {});
-                  const { error } = await supabase.from("videos").delete().eq("id", video.id).eq("user_id", user.id);
+                  // Best-effort: remove the video file + all reply files from storage
+                  const { data: replyRows } = await supabase
+                    .from("replies").select("storage_path").eq("video_id", video.id);
+                  const paths = [video.storage_path, ...((replyRows ?? []).map((r: any) => r.storage_path).filter(Boolean))];
+                  await supabase.storage.from("videos").remove(paths).catch(() => {});
+                  // RLS allows the owner OR an admin with manage_users; the trigger
+                  // cascades reply rows automatically.
+                  const { error } = await supabase.from("videos").delete().eq("id", video.id);
                   if (error) throw error;
                   toast.success("Video deleted");
                   navigate({ to: "/u/$username", params: { username: video.profiles?.username ?? "" } });
