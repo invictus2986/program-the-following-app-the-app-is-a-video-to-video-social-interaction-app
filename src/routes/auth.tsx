@@ -94,6 +94,21 @@ function AuthPage() {
           >
             Continue with Google
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full rounded-full font-semibold mb-4"
+            onClick={async () => {
+              const result = await lovable.auth.signInWithOAuth("apple", {
+                redirect_uri: window.location.origin,
+              });
+              if (result.error) {
+                toast.error(result.error.message ?? "Apple sign-in failed");
+              }
+            }}
+          >
+            Continue with Apple
+          </Button>
           <div className="flex items-center gap-3 mb-4">
             <div className="h-px flex-1 bg-border" />
             <span className="text-xs text-muted-foreground">or with email</span>
