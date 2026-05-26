@@ -70,6 +70,8 @@ function RecordPage() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+  const drawStopRef = useRef<boolean>(false);
+  const rafRef = useRef<number | null>(null);
 
   const [stage, setStage] = useState<"idle" | "recording" | "review">("idle");
   const [elapsed, setElapsed] = useState(0);
@@ -152,7 +154,46 @@ function RecordPage() {
   }, [stage, previewUrl]);
 
   const startRecording = () => {
-    if (!streamRef.current) return;
+    if (!streamRef.current || !videoRef.current) return;
+    const videoEl = videoRef.current;
+    const w = videoEl.videoWidth || 720;
+    const h = videoEl.videoHeight || 1280;
+
+    // Composite the camera feed onto a canvas so we can burn a "Wopla"
+    // watermark into every recorded frame.
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      toast.error("Recording isn't supported in this browser.");
+      return;
+    }
+    drawStopRef.current = false;
+    const drawFrame = () => {
+      if (drawStopRef.current) return;
+      try {
+        ctx.drawImage(videoEl, 0, 0, w, h);
+        const fontSize = Math.max(14, Math.round(h * 0.028));
+        ctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+        ctx.textBaseline = "bottom";
+        ctx.textAlign = "right";
+        const x = w - Math.round(fontSize * 0.7);
+        const y = h - Math.round(fontSize * 0.5);
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillText("Wopla", x + 1, y + 1);
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.fillText("Wopla", x, y);
+      } catch {
+        // ignore transient draw errors (e.g. video not ready)
+      }
+      rafRef.current = requestAnimationFrame(drawFrame);
+    };
+    drawFrame();
+
+    const canvasStream = canvas.captureStream(30);
+    streamRef.current.getAudioTracks().forEach((t) => canvasStream.addTrack(t));
+
     chunksRef.current = [];
     const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
       ? "video/webm;codecs=vp9,opus"
@@ -161,7 +202,7 @@ function RecordPage() {
       : "video/webm";
     // Compression: cap bitrate to keep files small without re-encoding.
     // ~1.5 Mbps video + 96 kbps audio ≈ 12 MB / minute (vs 40-80 MB uncompressed).
-    const rec = new MediaRecorder(streamRef.current, {
+    const rec = new MediaRecorder(canvasStream, {
       mimeType: mime,
       videoBitsPerSecond: 1_500_000,
       audioBitsPerSecond: 96_000,
@@ -169,6 +210,9 @@ function RecordPage() {
     recorderRef.current = rec;
     rec.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
     rec.onstop = () => {
+      drawStopRef.current = true;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
       const b = new Blob(chunksRef.current, { type: mime });
       setBlob(b);
       const url = URL.createObjectURL(b);
