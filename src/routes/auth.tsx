@@ -25,6 +25,7 @@ function AuthPage() {
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [tosOpen, setTosOpen] = useState(false);
+  const [ppOpen, setPpOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<null | "email" | "google" | "apple">(null);
 
   useEffect(() => {
