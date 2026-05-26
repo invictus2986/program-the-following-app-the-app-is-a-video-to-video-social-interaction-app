@@ -18,6 +18,7 @@ type Report = {
   reason: string;
   details: string | null;
   created_at: string;
+  priority: number;
 };
 type ReporterMap = Record<string, { username: string }>;
 
@@ -32,7 +33,8 @@ function AdminReports() {
     setLoading(true);
     const { data } = await supabase
       .from("video_reports")
-      .select("id,video_id,reporter_id,reason,details,created_at")
+      .select("id,video_id,reporter_id,reason,details,created_at,priority")
+      .order("priority", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(200);
     const list = (data ?? []) as Report[];
