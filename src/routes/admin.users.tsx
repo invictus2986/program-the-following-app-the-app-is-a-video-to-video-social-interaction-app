@@ -45,10 +45,14 @@ function AdminUsers() {
     load();
   };
   const deleteAllVideos = async (uid: string) => {
-    if (!confirm("Delete ALL videos by this user?")) return;
-    const { error } = await supabase.from("videos").delete().eq("user_id", uid);
+    if (!confirm("Remove ALL videos by this user from public view? They will be archived.")) return;
+    const { error } = await supabase
+      .from("videos")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("user_id", uid)
+      .is("deleted_at", null);
     if (error) { toast.error(error.message); return; }
-    toast.success("Videos deleted");
+    toast.success("Videos archived");
   };
   const deleteAccount = async (uid: string) => {
     if (!confirm("Delete this account? This soft-deletes the profile and removes all their videos. This cannot be undone.")) return;

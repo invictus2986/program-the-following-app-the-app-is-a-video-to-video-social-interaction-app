@@ -498,6 +498,25 @@ export type Database = {
           total_seconds: number
         }[]
       }
+      admin_search_archived_videos: {
+        Args: { _email_query?: string }
+        Returns: {
+          caption: string
+          created_at: string
+          deleted_at: string
+          duration_seconds: number
+          id: string
+          likes_count: number
+          owner_display_name: string
+          owner_email: string
+          owner_username: string
+          posted_ip: unknown
+          replies_count: number
+          storage_path: string
+          user_id: string
+          views_count: number
+        }[]
+      }
       admin_user_analytics: {
         Args: { _since: string; _user_id: string }
         Returns: {

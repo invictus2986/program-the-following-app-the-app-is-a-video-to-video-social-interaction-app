@@ -488,9 +488,13 @@ function WatchPage() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this video?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {user && video.user_id === user.id ? "Delete this video?" : "Remove this video from public view?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the video and its replies. This action cannot be undone.
+              {user && video.user_id === user.id
+                ? "This permanently removes the video and its replies. This action cannot be undone."
+                : "The video will be archived and hidden from the public, but remains searchable by administrators."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -500,16 +504,25 @@ function WatchPage() {
                 if (!user) return;
                 setSubmitting(true);
                 try {
-                  // Best-effort: remove the video file + all reply files from storage
-                  const { data: replyRows } = await supabase
-                    .from("replies").select("storage_path").eq("video_id", video.id);
-                  const paths = [video.storage_path, ...((replyRows ?? []).map((r: any) => r.storage_path).filter(Boolean))];
-                  await supabase.storage.from("videos").remove(paths).catch(() => {});
-                  // RLS allows the owner OR an admin with manage_users; the trigger
-                  // cascades reply rows automatically.
-                  const { error } = await supabase.from("videos").delete().eq("id", video.id);
-                  if (error) throw error;
-                  toast.success("Video deleted");
+                  const isOwner = video.user_id === user.id;
+                  if (isOwner) {
+                    // Owner permanently deletes their own video + reply files.
+                    const { data: replyRows } = await supabase
+                      .from("replies").select("storage_path").eq("video_id", video.id);
+                    const paths = [video.storage_path, ...((replyRows ?? []).map((r: any) => r.storage_path).filter(Boolean))];
+                    await supabase.storage.from("videos").remove(paths).catch(() => {});
+                    const { error } = await supabase.from("videos").delete().eq("id", video.id);
+                    if (error) throw error;
+                    toast.success("Video deleted");
+                  } else {
+                    // Admin soft-deletes (archives) someone else's video.
+                    const { error } = await supabase
+                      .from("videos")
+                      .update({ deleted_at: new Date().toISOString() })
+                      .eq("id", video.id);
+                    if (error) throw error;
+                    toast.success("Video archived");
+                  }
                   navigate({ to: "/u/$username", params: { username: video.profiles?.username ?? "" } });
                 } catch (e: any) {
                   toast.error(e.message ?? "Failed to delete");
