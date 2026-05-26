@@ -76,6 +76,7 @@ function WatchPage() {
   const [submitting, setSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [queue, setQueue] = useState<string[]>([]);
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   // Load a navigation queue of recent video IDs for swipe nav
