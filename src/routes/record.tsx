@@ -47,17 +47,18 @@ async function captureThumbnail(videoBlob: Blob): Promise<Blob | null> {
   });
 }
 
-type Search = { replyTo?: string };
+type Search = { replyTo?: string; parentReplyId?: string };
 
 export const Route = createFileRoute("/record")({
   validateSearch: (s: Record<string, unknown>): Search => ({
     replyTo: typeof s.replyTo === "string" ? s.replyTo : undefined,
+    parentReplyId: typeof s.parentReplyId === "string" ? s.parentReplyId : undefined,
   }),
   component: RecordPage,
 });
 
 function RecordPage() {
-  const { replyTo } = Route.useSearch();
+  const { replyTo, parentReplyId } = Route.useSearch();
   const isReply = !!replyTo;
   const maxSeconds = isReply ? 3 * 60 : 5 * 60;
   const { user, loading } = useAuth();
@@ -236,6 +237,7 @@ function RecordPage() {
           user_id: user.id,
           storage_path: path,
           duration_seconds: elapsed,
+          parent_reply_id: parentReplyId ?? null,
         }).select("id").single();
         if (error) throw error;
         try {

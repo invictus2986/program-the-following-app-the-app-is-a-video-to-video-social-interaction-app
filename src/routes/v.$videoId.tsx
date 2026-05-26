@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { publicUrl, formatDuration, formatCount } from "@/lib/video";
 import { Button } from "@/components/ui/button";
-import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag } from "lucide-react";
+import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag, ChevronDown, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { toast } from "sonner";
@@ -48,6 +48,7 @@ type Reply = {
   storage_path: string;
   duration_seconds: number | null;
   created_at: string;
+  parent_reply_id: string | null;
   profiles: Profile | null;
 };
 
@@ -75,6 +76,7 @@ function WatchPage() {
   const [submitting, setSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [queue, setQueue] = useState<string[]>([]);
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   // Load a navigation queue of recent video IDs for swipe nav
@@ -147,7 +149,7 @@ function WatchPage() {
           .maybeSingle(),
         supabase
           .from("replies")
-          .select("id,user_id,storage_path,duration_seconds,created_at")
+          .select("id,user_id,storage_path,duration_seconds,created_at,parent_reply_id")
           .eq("video_id", videoId)
           .order("created_at", { ascending: false }),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", rawVideo.user_id),
@@ -381,67 +383,43 @@ function WatchPage() {
               </Button>
             )}
           </div>
+          {activeReply && (
+            <div className="mt-2 text-sm text-muted-foreground">
+              Watching reply by <strong className="text-foreground">@{activeReply.profiles?.username ?? "unknown"}</strong>
+              {" · "}
+              <button
+                onClick={() =>
+                  user
+                    ? navigate({ to: "/record", search: { replyTo: video.id, parentReplyId: activeReply.id } })
+                    : navigate({ to: "/auth" })
+                }
+                className="text-primary hover:underline"
+              >
+                Reply to this reply
+              </button>
+            </div>
+          )}
         </div>
 
         <aside>
           <h3 className="font-display text-xl font-semibold mb-3 flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" /> {video.replies_count} {video.replies_count === 1 ? "reply" : "replies"}
           </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {replies.length === 0 && (
-              <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
-            )}
-            {[...replies]
-              .map((r) => ({
-                r,
-                depth: replies.filter(
-                  (x) => x.user_id === r.user_id || x.user_id === video.user_id,
-                ).length,
-              }))
-              .sort((a, b) => b.depth - a.depth)
-              .map(({ r, depth: backForth }) => {
-              return (
-              <button
-                key={r.id}
-                onClick={() => {
-                  navigate({
-                    to: "/v/$videoId",
-                    params: { videoId: video.id },
-                    search: { reply: r.id },
-                  });
-                }}
-                className={`group relative aspect-[9/16] overflow-hidden rounded-2xl border bg-black transition ${activeReply?.id === r.id ? "border-primary" : "border-border hover:border-primary/60"}`}
-              >
-                <video src={publicUrl(r.storage_path) + "#t=0.1"} muted preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                <div className="absolute inset-0 grid place-items-center">
-                  <Play className="h-8 w-8 text-white drop-shadow" fill="white" />
-                </div>
-                {backForth > 1 && (
-                  <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shadow-[var(--shadow-elev)]">
-                    +{backForth}
-                  </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-left">
-                  <p className="font-semibold text-xs truncate">@{r.profiles?.username ?? "unknown"}</p>
-                  <p className="text-[10px] opacity-80">{formatDuration(r.duration_seconds)}</p>
-                </div>
-                {canManage && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Delete reply"
-                    onClick={(e) => { e.stopPropagation(); setReplyToDelete(r); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setReplyToDelete(r); } }}
-                    className="absolute top-2 left-2 h-7 w-7 grid place-items-center rounded-full bg-destructive text-destructive-foreground shadow-[var(--shadow-elev)] hover:bg-destructive/90"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </span>
-                )}
-              </button>
-              );
-            })}
-          </div>
+          {replies.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
+          ) : (
+            <ReplyTree
+              replies={replies}
+              rootVideoId={video.id}
+              activeReplyId={activeReply?.id ?? null}
+              canManage={canManage}
+              user={user}
+              navigate={navigate}
+              onAskDelete={setReplyToDelete}
+              expanded={expandedReplies}
+              setExpanded={setExpandedReplies}
+            />
+          )}
         </aside>
       </div>
 
@@ -593,4 +571,112 @@ function WatchPage() {
       </Dialog>
     </AppShell>
   );
+}
+
+type ReplyTreeProps = {
+  replies: Reply[];
+  rootVideoId: string;
+  activeReplyId: string | null;
+  canManage: boolean;
+  user: { id: string } | null;
+  navigate: ReturnType<typeof useNavigate>;
+  onAskDelete: (r: Reply) => void;
+  expanded: Set<string>;
+  setExpanded: (s: Set<string>) => void;
+};
+
+function ReplyTree({ replies, rootVideoId, activeReplyId, canManage, user, navigate, onAskDelete, expanded, setExpanded }: ReplyTreeProps) {
+  // Build children map
+  const childrenByParent = new Map<string | null, Reply[]>();
+  const ids = new Set(replies.map((r) => r.id));
+  for (const r of replies) {
+    // If parent_reply_id points to a missing reply, treat as root.
+    const key = r.parent_reply_id && ids.has(r.parent_reply_id) ? r.parent_reply_id : null;
+    const arr = childrenByParent.get(key) ?? [];
+    arr.push(r);
+    childrenByParent.set(key, arr);
+  }
+
+  // Memoized descendant counts
+  const descendantCount = new Map<string, number>();
+  const countDesc = (id: string): number => {
+    if (descendantCount.has(id)) return descendantCount.get(id)!;
+    const kids = childrenByParent.get(id) ?? [];
+    let total = kids.length;
+    for (const k of kids) total += countDesc(k.id);
+    descendantCount.set(id, total);
+    return total;
+  };
+
+  const toggle = (id: string) => {
+    const next = new Set(expanded);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpanded(next);
+  };
+
+  const renderNodes = (parentId: string | null, depth: number) => {
+    const nodes = childrenByParent.get(parentId) ?? [];
+    if (!nodes.length) return null;
+    return (
+      <div className={depth === 0 ? "grid grid-cols-3 gap-3" : "mt-2 ml-3 pl-3 border-l-2 border-border grid grid-cols-2 gap-2"}>
+        {nodes.map((r) => {
+          const total = countDesc(r.id);
+          const isOpen = expanded.has(r.id);
+          return (
+            <div key={r.id} className="space-y-2">
+              <button
+                onClick={() => navigate({ to: "/v/$videoId", params: { videoId: rootVideoId }, search: { reply: r.id } })}
+                className={`group relative aspect-[9/16] w-full overflow-hidden rounded-2xl border bg-black transition ${activeReplyId === r.id ? "border-primary" : "border-border hover:border-primary/60"}`}
+              >
+                <video src={publicUrl(r.storage_path) + "#t=0.1"} muted preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                <div className="absolute inset-0 grid place-items-center">
+                  <Play className="h-8 w-8 text-white drop-shadow" fill="white" />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-left">
+                  <p className="font-semibold text-xs truncate">@{r.profiles?.username ?? "unknown"}</p>
+                  <p className="text-[10px] opacity-80">{formatDuration(r.duration_seconds)}</p>
+                </div>
+                {canManage && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Delete reply"
+                    onClick={(e) => { e.stopPropagation(); onAskDelete(r); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onAskDelete(r); } }}
+                    className="absolute top-2 left-2 h-7 w-7 grid place-items-center rounded-full bg-destructive text-destructive-foreground shadow-[var(--shadow-elev)] hover:bg-destructive/90"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </span>
+                )}
+              </button>
+              <div className="flex items-center justify-between gap-2 text-xs">
+                {total > 0 ? (
+                  <button
+                    onClick={() => toggle(r.id)}
+                    className="text-primary hover:underline flex items-center gap-1"
+                  >
+                    {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                    {isOpen ? `Hide ${total}` : `View ${total}`}
+                  </button>
+                ) : <span />}
+                {user && (
+                  <button
+                    onClick={() => navigate({ to: "/record", search: { replyTo: rootVideoId, parentReplyId: r.id } })}
+                    className="text-muted-foreground hover:text-primary flex items-center gap-1"
+                  >
+                    <Repeat2 className="h-3 w-3" /> Reply
+                  </button>
+                )}
+              </div>
+              {isOpen && renderNodes(r.id, depth + 1)}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return <>{renderNodes(null, 0)}</>;
 }
