@@ -36,7 +36,8 @@ function AdminUserReports() {
     setLoading(true);
     const { data } = await supabase
       .from("user_reports")
-      .select("id,reported_user_id,reporter_id,reason,details,created_at")
+      .select("id,reported_user_id,reporter_id,reason,details,created_at,priority")
+      .order("priority", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(200);
     const list = (data ?? []) as Report[];
