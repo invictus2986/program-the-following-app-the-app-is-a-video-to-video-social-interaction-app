@@ -19,6 +19,7 @@ type Report = {
   reason: string;
   details: string | null;
   created_at: string;
+  priority: number;
 };
 type ProfMap = Record<string, { username: string; display_name: string | null }>;
 
