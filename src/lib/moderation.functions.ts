@@ -26,17 +26,22 @@ export const recordPostIp = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const ip = extractIp();
-    if (!ip) return { ok: false };
-    const { userId } = context;
-    if (data.videoId) {
-      await supabaseAdmin.from("videos").update({ posted_ip: ip }).eq("id", data.videoId).eq("user_id", userId);
+    try {
+      const ip = extractIp();
+      if (!ip) return { ok: false as const };
+      const { userId } = context;
+      if (data.videoId) {
+        await supabaseAdmin.from("videos").update({ posted_ip: ip }).eq("id", data.videoId).eq("user_id", userId);
+      }
+      if (data.replyId) {
+        await supabaseAdmin.from("replies").update({ posted_ip: ip }).eq("id", data.replyId).eq("user_id", userId);
+      }
+      await supabaseAdmin.from("profiles").update({ last_ip: ip }).eq("user_id", userId);
+      return { ok: true as const };
+    } catch (err) {
+      console.error("recordPostIp failed:", err);
+      return { ok: false as const };
     }
-    if (data.replyId) {
-      await supabaseAdmin.from("replies").update({ posted_ip: ip }).eq("id", data.replyId).eq("user_id", userId);
-    }
-    await supabaseAdmin.from("profiles").update({ last_ip: ip }).eq("user_id", userId);
-    return { ok: true };
   });
 
 /** Admin-only: returns email + IP info for a user. Gated server-side by the SECURITY DEFINER function. */
