@@ -597,6 +597,22 @@ function ReplyTree({ replies, rootVideoId, activeReplyId, canManage, user, navig
     childrenByParent.set(key, arr);
   }
 
+  // Float the active reply's root ancestor to the front so the
+  // currently-watched reply appears first in the list.
+  if (activeReplyId) {
+    const parentOf = new Map(replies.map((r) => [r.id, r.parent_reply_id && ids.has(r.parent_reply_id) ? r.parent_reply_id : null]));
+    let rootAncestor: string | null = activeReplyId;
+    let guard = 0;
+    while (rootAncestor && parentOf.get(rootAncestor) && guard++ < 100) {
+      rootAncestor = parentOf.get(rootAncestor)!;
+    }
+    const roots = childrenByParent.get(null) ?? [];
+    const idx = roots.findIndex((n) => n.id === rootAncestor);
+    if (idx > 0) {
+      childrenByParent.set(null, [roots[idx], ...roots.slice(0, idx), ...roots.slice(idx + 1)]);
+    }
+  }
+
   // Memoized descendant counts
   const descendantCount = new Map<string, number>();
   const countDesc = (id: string): number => {
@@ -627,7 +643,7 @@ function ReplyTree({ replies, rootVideoId, activeReplyId, canManage, user, navig
             <div key={r.id} className="space-y-2">
               <button
                 onClick={() => navigate({ to: "/v/$videoId", params: { videoId: rootVideoId }, search: { reply: r.id } })}
-                className={`group relative aspect-[9/16] w-full overflow-hidden rounded-2xl border bg-black transition ${activeReplyId === r.id ? "border-primary" : "border-border hover:border-primary/60"}`}
+                className={`group relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black transition ${activeReplyId === r.id ? "border-[3px] border-red-500 ring-2 ring-red-500/50 shadow-[0_0_0_2px_rgba(239,68,68,0.35)]" : "border border-border hover:border-primary/60"}`}
               >
                 <video src={publicUrl(r.storage_path) + "#t=0.1"} muted preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
