@@ -212,6 +212,19 @@ function AuthPage() {
         }}
         onAccept={handleTosAccept}
         busy={busy}
+        acceptLabel="Continue"
+      />
+      <PrivacyPolicyDialog
+        open={ppOpen}
+        onOpenChange={(o) => {
+          setPpOpen(o);
+          if (!o) {
+            setPendingAction(null);
+            setTosOpen(false);
+          }
+        }}
+        onAccept={handlePrivacyAccept}
+        busy={busy}
         acceptLabel="Create Account"
       />
     </AppShell>
