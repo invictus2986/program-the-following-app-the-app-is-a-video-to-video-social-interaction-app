@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { TermsOfServiceDialog } from "@/components/TermsOfServiceDialog";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -22,30 +23,58 @@ function AuthPage() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [tosOpen, setTosOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<null | "email" | "google" | "apple">(null);
 
   useEffect(() => {
     if (user) navigate({ to: "/" });
   }, [user, navigate]);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      if (mode === "signup") {
+  const validateSignupForm = () => {
         const cleanU = username.toLowerCase().replace(/[^a-z0-9_]/g, "");
         if (cleanU.length < 3) {
           toast.error("Username must be at least 3 characters (letters, numbers, _)");
-          setBusy(false);
-          return;
+      return null;
         }
         const cleanDisplay = displayName.trim();
         if (cleanDisplay.length < 1) {
           toast.error("Please enter a display name");
-          setBusy(false);
-          return;
+      return null;
         }
         if (cleanDisplay.length > 50) {
           toast.error("Display name must be 50 characters or less");
+      return null;
+    }
+    return { cleanU, cleanDisplay };
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (mode === "signup") {
+      const ok = validateSignupForm();
+      if (!ok) return;
+      setPendingAction("email");
+      setTosOpen(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success("Welcome back");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleTosAccept = async () => {
+    setBusy(true);
+    try {
+      if (pendingAction === "email") {
+        const ok = validateSignupForm();
+        if (!ok) {
           setBusy(false);
           return;
         }
@@ -54,20 +83,25 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: { username: cleanU, display_name: cleanDisplay },
+            data: { username: ok.cleanU, display_name: ok.cleanDisplay, tos_accepted_at: new Date().toISOString() },
           },
         });
         if (error) throw error;
         toast.success("Account created! Check your email to verify.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Welcome back");
+        setTosOpen(false);
+      } else if (pendingAction === "google" || pendingAction === "apple") {
+        const result = await lovable.auth.signInWithOAuth(pendingAction, {
+          redirect_uri: window.location.origin,
+        });
+        if (result.error) {
+          toast.error(result.error.message ?? `${pendingAction} sign-in failed`);
+        }
       }
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setBusy(false);
+      setPendingAction(null);
     }
   };
 
@@ -84,6 +118,11 @@ function AuthPage() {
             variant="outline"
             className="w-full rounded-full font-semibold mb-4"
             onClick={async () => {
+              if (mode === "signup") {
+                setPendingAction("google");
+                setTosOpen(true);
+                return;
+              }
               const result = await lovable.auth.signInWithOAuth("google", {
                 redirect_uri: window.location.origin,
               });
@@ -99,6 +138,11 @@ function AuthPage() {
             variant="outline"
             className="w-full rounded-full font-semibold mb-4"
             onClick={async () => {
+              if (mode === "signup") {
+                setPendingAction("apple");
+                setTosOpen(true);
+                return;
+              }
               const result = await lovable.auth.signInWithOAuth("apple", {
                 redirect_uri: window.location.origin,
               });
@@ -148,6 +192,16 @@ function AuthPage() {
           </button>
         </div>
       </div>
+      <TermsOfServiceDialog
+        open={tosOpen}
+        onOpenChange={(o) => {
+          setTosOpen(o);
+          if (!o) setPendingAction(null);
+        }}
+        onAccept={handleTosAccept}
+        busy={busy}
+        acceptLabel="Create Account"
+      />
     </AppShell>
   );
 }
