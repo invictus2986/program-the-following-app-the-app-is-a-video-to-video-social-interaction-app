@@ -23,6 +23,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUserReportsRouteImport } from './routes/admin.user-reports'
 import { Route as AdminStorageRouteImport } from './routes/admin.storage'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminArchiveRouteImport } from './routes/admin.archive'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
@@ -97,6 +98,11 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminArchiveRoute = AdminArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
   id: '/announcements',
   path: '/announcements',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/archive': typeof AdminArchiveRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/storage': typeof AdminStorageRoute
   '/admin/user-reports': typeof AdminUserReportsRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/archive': typeof AdminArchiveRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/storage': typeof AdminStorageRoute
   '/admin/user-reports': typeof AdminUserReportsRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/archive': typeof AdminArchiveRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/storage': typeof AdminStorageRoute
   '/admin/user-reports': typeof AdminUserReportsRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/analytics'
     | '/admin/announcements'
+    | '/admin/archive'
     | '/admin/reports'
     | '/admin/storage'
     | '/admin/user-reports'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/analytics'
     | '/admin/announcements'
+    | '/admin/archive'
     | '/admin/reports'
     | '/admin/storage'
     | '/admin/user-reports'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/admin/admins'
     | '/admin/analytics'
     | '/admin/announcements'
+    | '/admin/archive'
     | '/admin/reports'
     | '/admin/storage'
     | '/admin/user-reports'
@@ -341,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/archive': {
+      id: '/admin/archive'
+      path: '/archive'
+      fullPath: '/admin/archive'
+      preLoaderRoute: typeof AdminArchiveRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/announcements': {
       id: '/admin/announcements'
       path: '/announcements'
@@ -369,6 +388,7 @@ interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
+  AdminArchiveRoute: typeof AdminArchiveRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminStorageRoute: typeof AdminStorageRoute
   AdminUserReportsRoute: typeof AdminUserReportsRoute
@@ -380,6 +400,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
+  AdminArchiveRoute: AdminArchiveRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminStorageRoute: AdminStorageRoute,
   AdminUserReportsRoute: AdminUserReportsRoute,

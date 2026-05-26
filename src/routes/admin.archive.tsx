@@ -41,7 +41,7 @@ function AdminArchive() {
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase.rpc("admin_search_archived_videos", {
-      _email_query: debounced || null,
+      _email_query: debounced || undefined,
     });
     if (error) toast.error(error.message);
     setRows((data ?? []) as ArchivedVideo[]);
