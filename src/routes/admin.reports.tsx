@@ -61,10 +61,10 @@ function AdminReports() {
   };
 
   const deleteVideo = async (videoId: string) => {
-    if (!confirm("Delete this video? This cannot be undone.")) return;
-    const { error } = await supabase.from("videos").delete().eq("id", videoId);
+    if (!confirm("Remove this video from public view? It will be archived and remain searchable by administrators.")) return;
+    const { error } = await supabase.from("videos").update({ deleted_at: new Date().toISOString() }).eq("id", videoId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Video deleted");
+    toast.success("Video archived");
     load();
   };
 
