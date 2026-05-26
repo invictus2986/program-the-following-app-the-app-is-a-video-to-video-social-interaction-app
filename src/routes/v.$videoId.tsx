@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { publicUrl, formatDuration, formatCount } from "@/lib/video";
 import { Button } from "@/components/ui/button";
-import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag } from "lucide-react";
+import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag, ChevronDown, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { toast } from "sonner";
@@ -48,6 +48,7 @@ type Reply = {
   storage_path: string;
   duration_seconds: number | null;
   created_at: string;
+  parent_reply_id: string | null;
   profiles: Profile | null;
 };
 
@@ -147,7 +148,7 @@ function WatchPage() {
           .maybeSingle(),
         supabase
           .from("replies")
-          .select("id,user_id,storage_path,duration_seconds,created_at")
+          .select("id,user_id,storage_path,duration_seconds,created_at,parent_reply_id")
           .eq("video_id", videoId)
           .order("created_at", { ascending: false }),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", rawVideo.user_id),
