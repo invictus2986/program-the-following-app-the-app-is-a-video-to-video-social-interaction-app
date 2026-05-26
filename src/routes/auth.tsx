@@ -71,7 +71,12 @@ function AuthPage() {
     }
   };
 
-  const handleTosAccept = async () => {
+  const handleTosAccept = () => {
+    setTosOpen(false);
+    setPpOpen(true);
+  };
+
+  const handlePrivacyAccept = async () => {
     setBusy(true);
     try {
       if (pendingAction === "email") {
@@ -85,12 +90,17 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: { username: ok.cleanU, display_name: ok.cleanDisplay, tos_accepted_at: new Date().toISOString() },
+            data: {
+              username: ok.cleanU,
+              display_name: ok.cleanDisplay,
+              tos_accepted_at: new Date().toISOString(),
+              pp_accepted_at: new Date().toISOString(),
+            },
           },
         });
         if (error) throw error;
         toast.success("Account created! Check your email to verify.");
-        setTosOpen(false);
+        setPpOpen(false);
       } else if (pendingAction === "google" || pendingAction === "apple") {
         const result = await lovable.auth.signInWithOAuth(pendingAction, {
           redirect_uri: window.location.origin,
