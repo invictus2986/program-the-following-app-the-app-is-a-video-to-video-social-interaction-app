@@ -305,6 +305,7 @@ export type Database = {
           created_at: string
           details: string | null
           id: string
+          priority: number
           reason: string
           reported_user_id: string
           reporter_id: string
@@ -313,6 +314,7 @@ export type Database = {
           created_at?: string
           details?: string | null
           id?: string
+          priority?: number
           reason: string
           reported_user_id: string
           reporter_id: string
@@ -321,6 +323,7 @@ export type Database = {
           created_at?: string
           details?: string | null
           id?: string
+          priority?: number
           reason?: string
           reported_user_id?: string
           reporter_id?: string
@@ -356,6 +359,7 @@ export type Database = {
           created_at: string
           details: string | null
           id: string
+          priority: number
           reason: string
           reporter_id: string
           video_id: string
@@ -364,6 +368,7 @@ export type Database = {
           created_at?: string
           details?: string | null
           id?: string
+          priority?: number
           reason: string
           reporter_id: string
           video_id: string
@@ -372,6 +377,7 @@ export type Database = {
           created_at?: string
           details?: string | null
           id?: string
+          priority?: number
           reason?: string
           reporter_id?: string
           video_id?: string

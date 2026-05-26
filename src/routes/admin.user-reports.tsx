@@ -19,6 +19,7 @@ type Report = {
   reason: string;
   details: string | null;
   created_at: string;
+  priority: number;
 };
 type ProfMap = Record<string, { username: string; display_name: string | null }>;
 
@@ -35,7 +36,8 @@ function AdminUserReports() {
     setLoading(true);
     const { data } = await supabase
       .from("user_reports")
-      .select("id,reported_user_id,reporter_id,reason,details,created_at")
+      .select("id,reported_user_id,reporter_id,reason,details,created_at,priority")
+      .order("priority", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(200);
     const list = (data ?? []) as Report[];
@@ -105,9 +107,16 @@ function AdminUserReports() {
         const reporter = profiles[r.reporter_id];
         const banned = bans.has(r.reported_user_id);
         return (
-          <div key={r.id} className="rounded-2xl border border-border p-4">
+          <div key={r.id} className={`rounded-2xl border p-4 ${r.priority > 1 ? "border-destructive/50 bg-destructive/5" : "border-border"}`}>
             <div className="flex items-baseline justify-between gap-2 mb-1">
-              <span className="text-sm font-semibold capitalize">{r.reason.replace(/_/g, " ")}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold capitalize">{r.reason.replace(/_/g, " ")}</span>
+                {r.priority > 1 && (
+                  <span className="inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
+                    {r.priority} reports
+                  </span>
+                )}
+              </div>
               <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
             </div>
             <p className="text-xs text-muted-foreground mb-1">
