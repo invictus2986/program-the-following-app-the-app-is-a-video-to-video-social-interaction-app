@@ -252,6 +252,7 @@ export type Database = {
           created_at: string
           duration_seconds: number | null
           id: string
+          parent_reply_id: string | null
           posted_ip: unknown
           storage_path: string
           user_id: string
@@ -261,6 +262,7 @@ export type Database = {
           created_at?: string
           duration_seconds?: number | null
           id?: string
+          parent_reply_id?: string | null
           posted_ip?: unknown
           storage_path: string
           user_id: string
@@ -270,12 +272,20 @@ export type Database = {
           created_at?: string
           duration_seconds?: number | null
           id?: string
+          parent_reply_id?: string | null
           posted_ip?: unknown
           storage_path?: string
           user_id?: string
           video_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "replies_parent_reply_id_fkey"
+            columns: ["parent_reply_id"]
+            isOneToOne: false
+            referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "replies_video_id_fkey"
             columns: ["video_id"]
