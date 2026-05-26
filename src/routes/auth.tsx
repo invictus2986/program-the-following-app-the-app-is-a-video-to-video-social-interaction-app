@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { TermsOfServiceDialog } from "@/components/TermsOfServiceDialog";
+import { PrivacyPolicyDialog } from "@/components/PrivacyPolicyDialog";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
