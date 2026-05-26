@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { TermsOfServiceDialog } from "@/components/TermsOfServiceDialog";
+import { PrivacyPolicyDialog } from "@/components/PrivacyPolicyDialog";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -24,6 +25,7 @@ function AuthPage() {
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [tosOpen, setTosOpen] = useState(false);
+  const [ppOpen, setPpOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<null | "email" | "google" | "apple">(null);
 
   useEffect(() => {
@@ -69,7 +71,12 @@ function AuthPage() {
     }
   };
 
-  const handleTosAccept = async () => {
+  const handleTosAccept = () => {
+    setTosOpen(false);
+    setPpOpen(true);
+  };
+
+  const handlePrivacyAccept = async () => {
     setBusy(true);
     try {
       if (pendingAction === "email") {
@@ -83,12 +90,17 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: { username: ok.cleanU, display_name: ok.cleanDisplay, tos_accepted_at: new Date().toISOString() },
+            data: {
+              username: ok.cleanU,
+              display_name: ok.cleanDisplay,
+              tos_accepted_at: new Date().toISOString(),
+              pp_accepted_at: new Date().toISOString(),
+            },
           },
         });
         if (error) throw error;
         toast.success("Account created! Check your email to verify.");
-        setTosOpen(false);
+        setPpOpen(false);
       } else if (pendingAction === "google" || pendingAction === "apple") {
         const result = await lovable.auth.signInWithOAuth(pendingAction, {
           redirect_uri: window.location.origin,
@@ -199,6 +211,19 @@ function AuthPage() {
           if (!o) setPendingAction(null);
         }}
         onAccept={handleTosAccept}
+        busy={busy}
+        acceptLabel="Continue"
+      />
+      <PrivacyPolicyDialog
+        open={ppOpen}
+        onOpenChange={(o) => {
+          setPpOpen(o);
+          if (!o) {
+            setPendingAction(null);
+            setTosOpen(false);
+          }
+        }}
+        onAccept={handlePrivacyAccept}
         busy={busy}
         acceptLabel="Create Account"
       />
