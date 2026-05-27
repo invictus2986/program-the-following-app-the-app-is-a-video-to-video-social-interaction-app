@@ -76,7 +76,7 @@ function WatchPage() {
   const [submitting, setSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [queue, setQueue] = useState<string[]>([]);
-  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [showAllResponses, setShowAllResponses] = useState(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   // Load a navigation queue of recent video IDs for swipe nav
@@ -212,6 +212,7 @@ function WatchPage() {
   useEffect(() => {
     load();
     setEndMenu(false);
+    setShowAllResponses(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, user?.id]);
 
@@ -408,16 +409,16 @@ function WatchPage() {
           {replies.length === 0 ? (
             <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
           ) : (
-            <ReplyTree
+            <ReplyList
               replies={replies}
-              rootVideoId={video.id}
-              activeReplyId={activeReply?.id ?? null}
+              video={video}
+              activeReply={activeReply}
               canManage={canManage}
               user={user}
               navigate={navigate}
               onAskDelete={setReplyToDelete}
-              expanded={expandedReplies}
-              setExpanded={setExpandedReplies}
+              showAll={showAllResponses}
+              setShowAll={setShowAllResponses}
             />
           )}
         </aside>
@@ -573,126 +574,185 @@ function WatchPage() {
   );
 }
 
-type ReplyTreeProps = {
+const INITIAL_VISIBLE = 4;
+
+type ReplyListProps = {
   replies: Reply[];
-  rootVideoId: string;
-  activeReplyId: string | null;
+  video: Video;
+  activeReply: Reply | null;
   canManage: boolean;
   user: { id: string } | null;
   navigate: ReturnType<typeof useNavigate>;
   onAskDelete: (r: Reply) => void;
-  expanded: Set<string>;
-  setExpanded: (s: Set<string>) => void;
+  showAll: boolean;
+  setShowAll: (v: boolean) => void;
 };
 
-function ReplyTree({ replies, rootVideoId, activeReplyId, canManage, user, navigate, onAskDelete, expanded, setExpanded }: ReplyTreeProps) {
-  // Build children map
-  const childrenByParent = new Map<string | null, Reply[]>();
+function ReplyList({ replies, video, activeReply, canManage, user, navigate, onAskDelete, showAll, setShowAll }: ReplyListProps) {
   const ids = new Set(replies.map((r) => r.id));
-  for (const r of replies) {
-    // If parent_reply_id points to a missing reply, treat as root.
-    const key = r.parent_reply_id && ids.has(r.parent_reply_id) ? r.parent_reply_id : null;
-    const arr = childrenByParent.get(key) ?? [];
-    arr.push(r);
-    childrenByParent.set(key, arr);
-  }
+  const parentOf = (r: Reply) => (r.parent_reply_id && ids.has(r.parent_reply_id) ? r.parent_reply_id : null);
 
-  // Float the active reply's root ancestor to the front so the
-  // currently-watched reply appears first in the list.
-  if (activeReplyId) {
-    const parentOf = new Map(replies.map((r) => [r.id, r.parent_reply_id && ids.has(r.parent_reply_id) ? r.parent_reply_id : null]));
-    let rootAncestor: string | null = activeReplyId;
-    let guard = 0;
-    while (rootAncestor && parentOf.get(rootAncestor) && guard++ < 100) {
-      rootAncestor = parentOf.get(rootAncestor)!;
-    }
-    const roots = childrenByParent.get(null) ?? [];
-    const idx = roots.findIndex((n) => n.id === rootAncestor);
-    if (idx > 0) {
-      childrenByParent.set(null, [roots[idx], ...roots.slice(0, idx), ...roots.slice(idx + 1)]);
+  // Direct responses to the currently-watched item
+  const currentId = activeReply?.id ?? null;
+  const responses = replies
+    .filter((r) => parentOf(r) === currentId)
+    // Sort: rank proxy = recency (no like/view counts on replies). Newest first.
+    .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+
+  // Parent context item (shown first when viewing a reply)
+  let parentItem: { kind: "original" } | { kind: "reply"; reply: Reply } | null = null;
+  if (activeReply) {
+    const parentId = parentOf(activeReply);
+    if (parentId) {
+      const p = replies.find((r) => r.id === parentId);
+      if (p) parentItem = { kind: "reply", reply: p };
+    } else {
+      parentItem = { kind: "original" };
     }
   }
 
-  // Memoized descendant counts
-  const descendantCount = new Map<string, number>();
-  const countDesc = (id: string): number => {
-    if (descendantCount.has(id)) return descendantCount.get(id)!;
-    const kids = childrenByParent.get(id) ?? [];
-    let total = kids.length;
-    for (const k of kids) total += countDesc(k.id);
-    descendantCount.set(id, total);
-    return total;
-  };
+  const visible = showAll ? responses : responses.slice(0, INITIAL_VISIBLE);
+  const hidden = Math.max(0, responses.length - visible.length);
 
-  const toggle = (id: string) => {
-    const next = new Set(expanded);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setExpanded(next);
-  };
+  const goToReply = (id: string) =>
+    navigate({ to: "/v/$videoId", params: { videoId: video.id }, search: { reply: id } });
+  const goToOriginal = () =>
+    navigate({ to: "/v/$videoId", params: { videoId: video.id }, search: {} });
 
-  const renderNodes = (parentId: string | null, depth: number) => {
-    const nodes = childrenByParent.get(parentId) ?? [];
-    if (!nodes.length) return null;
-    return (
-      <div className={depth === 0 ? "grid grid-cols-3 gap-3" : "mt-2 ml-3 pl-3 border-l-2 border-border grid grid-cols-2 gap-2"}>
-        {nodes.map((r) => {
-          const total = countDesc(r.id);
-          const isOpen = expanded.has(r.id);
-          return (
-            <div key={r.id} className="space-y-2">
-              <button
-                onClick={() => navigate({ to: "/v/$videoId", params: { videoId: rootVideoId }, search: { reply: r.id } })}
-                className={`group relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black transition ${activeReplyId === r.id ? "border-[3px] border-red-500 ring-2 ring-red-500/50 shadow-[0_0_0_2px_rgba(239,68,68,0.35)]" : "border border-border hover:border-primary/60"}`}
-              >
-                <video src={publicUrl(r.storage_path) + "#t=0.1"} muted preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                <div className="absolute inset-0 grid place-items-center">
-                  <Play className="h-8 w-8 text-white drop-shadow" fill="white" />
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-2 text-white text-left">
-                  <p className="font-semibold text-xs truncate">@{r.profiles?.username ?? "unknown"}</p>
-                  <p className="text-[10px] opacity-80">{formatDuration(r.duration_seconds)}</p>
-                </div>
-                {canManage && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Delete reply"
-                    onClick={(e) => { e.stopPropagation(); onAskDelete(r); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onAskDelete(r); } }}
-                    className="absolute top-2 left-2 h-7 w-7 grid place-items-center rounded-full bg-destructive text-destructive-foreground shadow-[var(--shadow-elev)] hover:bg-destructive/90"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </span>
-                )}
-              </button>
-              <div className="flex items-center justify-between gap-2 text-xs">
-                {total > 0 ? (
-                  <button
-                    onClick={() => toggle(r.id)}
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
-                    {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                    {isOpen ? `Hide ${total}` : `View ${total}`}
-                  </button>
-                ) : <span />}
-                {user && (
-                  <button
-                    onClick={() => navigate({ to: "/record", search: { replyTo: rootVideoId, parentReplyId: r.id } })}
-                    className="text-muted-foreground hover:text-primary flex items-center gap-1"
-                  >
-                    <Repeat2 className="h-3 w-3" /> Reply
-                  </button>
-                )}
-              </div>
-              {isOpen && renderNodes(r.id, depth + 1)}
-            </div>
-          );
-        })}
+  return (
+    <ul className="flex flex-col gap-3">
+      {parentItem?.kind === "original" && (
+        <ListRow
+          title={`Original by @${video.profiles?.username ?? "unknown"}`}
+          subtitle={`${formatCount(video.likes_count)} likes · ${formatCount(video.views_count)} views`}
+          badge="Replying to"
+          thumbSrc={publicUrl(video.storage_path) + "#t=0.1"}
+          duration={video.duration_seconds}
+          onClick={goToOriginal}
+        />
+      )}
+      {parentItem?.kind === "reply" && (
+        <ListRow
+          title={`Reply by @${parentItem.reply.profiles?.username ?? "unknown"}`}
+          subtitle="Tap to watch the reply this is responding to"
+          badge="Replying to"
+          thumbSrc={publicUrl(parentItem.reply.storage_path) + "#t=0.1"}
+          duration={parentItem.reply.duration_seconds}
+          onClick={() => goToReply(parentItem!.kind === "reply" ? parentItem!.reply.id : "")}
+        />
+      )}
+
+      {responses.length === 0 ? (
+        <li className="text-sm text-muted-foreground py-4">
+          No responses to this {activeReply ? "reply" : "video"} yet.
+        </li>
+      ) : (
+        visible.map((r) => (
+          <ListRow
+            key={r.id}
+            active={activeReply?.id === r.id}
+            title={`@${r.profiles?.username ?? "unknown"}`}
+            subtitle={new Date(r.created_at).toLocaleDateString()}
+            thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
+            duration={r.duration_seconds}
+            onClick={() => goToReply(r.id)}
+            onDelete={canManage ? () => onAskDelete(r) : undefined}
+            onReply={
+              user
+                ? () => navigate({ to: "/record", search: { replyTo: video.id, parentReplyId: r.id } })
+                : undefined
+            }
+          />
+        ))
+      )}
+
+      {hidden > 0 && (
+        <li>
+          <button
+            onClick={() => setShowAll(true)}
+            className="w-full rounded-2xl border border-dashed border-border py-3 text-sm text-primary hover:bg-accent flex items-center justify-center gap-2"
+          >
+            <ChevronDown className="h-4 w-4" /> Show {hidden} more
+          </button>
+        </li>
+      )}
+      {showAll && responses.length > INITIAL_VISIBLE && (
+        <li>
+          <button
+            onClick={() => setShowAll(false)}
+            className="w-full rounded-2xl border border-dashed border-border py-2 text-xs text-muted-foreground hover:bg-accent flex items-center justify-center gap-2"
+          >
+            <ChevronRight className="h-3 w-3 rotate-90" /> Show less
+          </button>
+        </li>
+      )}
+    </ul>
+  );
+}
+
+function ListRow({
+  title,
+  subtitle,
+  badge,
+  thumbSrc,
+  duration,
+  active,
+  onClick,
+  onDelete,
+  onReply,
+}: {
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  thumbSrc: string;
+  duration: number | null;
+  active?: boolean;
+  onClick: () => void;
+  onDelete?: () => void;
+  onReply?: () => void;
+}) {
+  return (
+    <li>
+      <div
+        className={`group flex items-center gap-3 p-2 rounded-2xl border transition ${
+          active
+            ? "border-[3px] border-red-500 ring-2 ring-red-500/50 bg-card"
+            : "border-border bg-card hover:border-primary/60"
+        }`}
+      >
+        <button
+          onClick={onClick}
+          className="relative h-20 w-14 shrink-0 overflow-hidden rounded-xl bg-black"
+        >
+          <video src={thumbSrc} muted preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute inset-0 grid place-items-center">
+            <Play className="h-5 w-5 text-white drop-shadow" fill="white" />
+          </div>
+        </button>
+        <button onClick={onClick} className="flex-1 min-w-0 text-left">
+          {badge && (
+            <span className="inline-block text-[10px] font-semibold uppercase tracking-wider text-primary mb-0.5">
+              {badge}
+            </span>
+          )}
+          <p className="font-semibold text-sm truncate">{title}</p>
+          {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
+          <p className="text-[10px] text-muted-foreground">{formatDuration(duration)}</p>
+        </button>
+        <div className="flex items-center gap-1">
+          {onReply && (
+            <Button size="sm" variant="ghost" className="rounded-full" onClick={onReply}>
+              <Repeat2 className="h-4 w-4" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button size="sm" variant="ghost" className="rounded-full text-destructive hover:text-destructive" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
-    );
-  };
-
-  return <>{renderNodes(null, 0)}</>;
+    </li>
+  );
 }
