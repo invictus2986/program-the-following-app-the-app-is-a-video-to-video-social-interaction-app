@@ -77,6 +77,7 @@ function WatchPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [queue, setQueue] = useState<string[]>([]);
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [showAllResponses, setShowAllResponses] = useState(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   // Load a navigation queue of recent video IDs for swipe nav
@@ -212,6 +213,7 @@ function WatchPage() {
   useEffect(() => {
     load();
     setEndMenu(false);
+    setShowAllResponses(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, user?.id]);
 
@@ -408,16 +410,16 @@ function WatchPage() {
           {replies.length === 0 ? (
             <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
           ) : (
-            <ReplyTree
+            <ReplyList
               replies={replies}
-              rootVideoId={video.id}
-              activeReplyId={activeReply?.id ?? null}
+              video={video}
+              activeReply={activeReply}
               canManage={canManage}
               user={user}
               navigate={navigate}
               onAskDelete={setReplyToDelete}
-              expanded={expandedReplies}
-              setExpanded={setExpandedReplies}
+              showAll={showAllResponses}
+              setShowAll={setShowAllResponses}
             />
           )}
         </aside>
