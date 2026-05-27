@@ -76,7 +76,6 @@ function WatchPage() {
   const [submitting, setSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [queue, setQueue] = useState<string[]>([]);
-  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const [showAllResponses, setShowAllResponses] = useState(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
