@@ -129,18 +129,9 @@ function AuthPage() {
             type="button"
             variant="outline"
             className="w-full rounded-full font-semibold mb-4"
-            onClick={async () => {
-              if (mode === "signup") {
-                setPendingAction("google");
-                setTosOpen(true);
-                return;
-              }
-              const result = await lovable.auth.signInWithOAuth("google", {
-                redirect_uri: window.location.origin,
-              });
-              if (result.error) {
-                toast.error(result.error.message ?? "Google sign-in failed");
-              }
+            onClick={() => {
+              setPendingAction("google");
+              setTosOpen(true);
             }}
           >
             Continue with Google
@@ -149,18 +140,9 @@ function AuthPage() {
             type="button"
             variant="outline"
             className="w-full rounded-full font-semibold mb-4"
-            onClick={async () => {
-              if (mode === "signup") {
-                setPendingAction("apple");
-                setTosOpen(true);
-                return;
-              }
-              const result = await lovable.auth.signInWithOAuth("apple", {
-                redirect_uri: window.location.origin,
-              });
-              if (result.error) {
-                toast.error(result.error.message ?? "Apple sign-in failed");
-              }
+            onClick={() => {
+              setPendingAction("apple");
+              setTosOpen(true);
             }}
           >
             Continue with Apple
