@@ -60,9 +60,10 @@ function Index() {
       .range(from, to);
     const raw = (data ?? []) as unknown as Omit<FeedVideo, "profiles">[];
     const list = await attachProfiles(raw);
-    const fresh = list.filter((v) => !seenIdsRef.current.has(v.id));
-    fresh.forEach((v) => seenIdsRef.current.add(v.id));
-    return { ranked: rankList(fresh), rawCount: raw.length };
+    // NOTE: don't mutate seenIdsRef here — the caller does that after its
+    // cancellation check, otherwise a stale effect run can poison the set
+    // and cause the next run to filter every video out.
+    return { list, rawCount: raw.length };
   };
 
   useEffect(() => {
@@ -91,9 +92,11 @@ function Index() {
       } else {
         setTopTags([]);
       }
-      const { ranked, rawCount } = await fetchPage(0);
+      const { list, rawCount } = await fetchPage(0);
       if (cancelled) return;
-      setVideos(ranked);
+      const fresh = list.filter((v) => !seenIdsRef.current.has(v.id));
+      fresh.forEach((v) => seenIdsRef.current.add(v.id));
+      setVideos(rankList(fresh));
       setPage(0);
       setHasMore(rawCount === PAGE_SIZE);
       setLoading(false);
@@ -112,8 +115,10 @@ function Index() {
         loadingMoreRef.current = true;
         setLoadingMore(true);
         const next = page + 1;
-        const { ranked, rawCount } = await fetchPage(next);
-        setVideos((prev) => [...prev, ...ranked]);
+        const { list, rawCount } = await fetchPage(next);
+        const fresh = list.filter((v) => !seenIdsRef.current.has(v.id));
+        fresh.forEach((v) => seenIdsRef.current.add(v.id));
+        setVideos((prev) => [...prev, ...rankList(fresh)]);
         setPage(next);
         setHasMore(rawCount === PAGE_SIZE);
         setLoadingMore(false);
