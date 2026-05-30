@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { TermsOfServiceDialog } from "@/components/TermsOfServiceDialog";
-import { PrivacyPolicyDialog } from "@/components/PrivacyPolicyDialog";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -24,9 +22,6 @@ function AuthPage() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [tosOpen, setTosOpen] = useState(false);
-  const [ppOpen, setPpOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<null | "email" | "google" | "apple">(null);
 
   useEffect(() => {
     if (user) navigate({ to: "/" });
@@ -52,34 +47,9 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === "signup") {
-      const ok = validateSignupForm();
-      if (!ok) return;
-      setPendingAction("email");
-      setTosOpen(true);
-      return;
-    }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      toast.success("Welcome back");
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleTosAccept = () => {
-    setTosOpen(false);
-    setPpOpen(true);
-  };
-
-  const handlePrivacyAccept = async () => {
-    setBusy(true);
-    try {
-      if (pendingAction === "email") {
+      if (mode === "signup") {
         const ok = validateSignupForm();
         if (!ok) {
           setBusy(false);
@@ -93,27 +63,36 @@ function AuthPage() {
             data: {
               username: ok.cleanU,
               display_name: ok.cleanDisplay,
-              tos_accepted_at: new Date().toISOString(),
-              pp_accepted_at: new Date().toISOString(),
             },
           },
         });
         if (error) throw error;
         toast.success("Account created! Check your email to verify.");
-        setPpOpen(false);
-      } else if (pendingAction === "google" || pendingAction === "apple") {
-        const result = await lovable.auth.signInWithOAuth(pendingAction, {
-          redirect_uri: window.location.origin,
-        });
-        if (result.error) {
-          toast.error(result.error.message ?? `${pendingAction} sign-in failed`);
-        }
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success("Welcome back");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startOAuth = async (provider: "google" | "apple") => {
+    setBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message ?? `${provider} sign-in failed`);
       }
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setBusy(false);
-      setPendingAction(null);
     }
   };
 
@@ -129,10 +108,7 @@ function AuthPage() {
             type="button"
             variant="outline"
             className="w-full rounded-full font-semibold mb-4"
-            onClick={() => {
-              setPendingAction("google");
-              setTosOpen(true);
-            }}
+            onClick={() => startOAuth("google")}
           >
             Continue with Google
           </Button>
@@ -140,10 +116,7 @@ function AuthPage() {
             type="button"
             variant="outline"
             className="w-full rounded-full font-semibold mb-4"
-            onClick={() => {
-              setPendingAction("apple");
-              setTosOpen(true);
-            }}
+            onClick={() => startOAuth("apple")}
           >
             Continue with Apple
           </Button>
@@ -186,29 +159,6 @@ function AuthPage() {
           </button>
         </div>
       </div>
-      <TermsOfServiceDialog
-        open={tosOpen}
-        onOpenChange={(o) => {
-          setTosOpen(o);
-          if (!o) setPendingAction(null);
-        }}
-        onAccept={handleTosAccept}
-        busy={busy}
-        acceptLabel="Continue"
-      />
-      <PrivacyPolicyDialog
-        open={ppOpen}
-        onOpenChange={(o) => {
-          setPpOpen(o);
-          if (!o) {
-            setPendingAction(null);
-            setTosOpen(false);
-          }
-        }}
-        onAccept={handlePrivacyAccept}
-        busy={busy}
-        acceptLabel="Create Account"
-      />
     </AppShell>
   );
 }
