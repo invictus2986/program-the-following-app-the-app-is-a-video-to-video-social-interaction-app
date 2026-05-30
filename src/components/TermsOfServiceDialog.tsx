@@ -43,7 +43,7 @@ export function TermsOfServiceDialog({ open, onOpenChange, onAccept, busy, accep
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Terms of Service</DialogTitle>
           <DialogDescription>
