@@ -378,7 +378,7 @@ function WatchPage() {
                 <Trash2 className="h-4 w-4 mr-1" /> Delete
               </Button>
             )}
-            {(!user || user.id !== video.user_id) && (
+            {(!user || (user.id !== video.user_id && !canManage)) && (
               <Button
                 onClick={() => (user ? setReportOpen(true) : navigate({ to: "/auth" }))}
                 variant="ghost"
