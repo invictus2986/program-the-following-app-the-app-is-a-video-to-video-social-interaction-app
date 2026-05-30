@@ -27,6 +27,7 @@ function Index() {
   const followingIdsRef = useRef<string[]>([]);
   const blockedRef = useRef<Set<string>>(new Set());
   const seenIdsRef = useRef<Set<string>>(new Set());
+  const loadingMoreRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const rankList = (list: FeedVideo[]) => {
@@ -107,7 +108,8 @@ function Index() {
     const el = sentinelRef.current;
     const io = new IntersectionObserver(
       async (entries) => {
-        if (!entries[0].isIntersecting || loadingMore || !hasMore) return;
+        if (!entries[0].isIntersecting || loadingMoreRef.current || !hasMore) return;
+        loadingMoreRef.current = true;
         setLoadingMore(true);
         const next = page + 1;
         const { ranked, rawCount } = await fetchPage(next);
@@ -115,12 +117,13 @@ function Index() {
         setPage(next);
         setHasMore(rawCount === PAGE_SIZE);
         setLoadingMore(false);
+        loadingMoreRef.current = false;
       },
       { rootMargin: "400px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [page, hasMore, loading, loadingMore]);
+  }, [page, hasMore, loading]);
 
   return (
     <AppShell>
