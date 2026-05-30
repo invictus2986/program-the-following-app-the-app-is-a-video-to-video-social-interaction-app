@@ -36,11 +36,16 @@ function Index() {
       const f = followingIdsRef.current;
       out = [...out.filter((v) => f.includes(v.user_id)), ...out.filter((v) => !f.includes(v.user_id))];
     }
-    if (tagWeightsRef.current.size) {
-      const score = (v: FeedVideo) =>
-        (v.hashtags ?? []).reduce((s, t) => s + (tagWeightsRef.current.get(t.toLowerCase()) ?? 0), 0);
-      out = [...out].sort((a, b) => score(b) - score(a));
-    }
+    // Engagement: like/view ratio with smoothing so brand-new videos aren't buried.
+    // ratio = (likes + 1) / (views + 5)  -> bounded, favors quality over raw views.
+    const engagement = (v: FeedVideo) => (v.likes_count + 1) / (v.views_count + 5);
+    const tagScore = (v: FeedVideo) =>
+      tagWeightsRef.current.size
+        ? (v.hashtags ?? []).reduce((s, t) => s + (tagWeightsRef.current.get(t.toLowerCase()) ?? 0), 0)
+        : 0;
+    // Combined score: tag affinity dominates when present, engagement always contributes.
+    const score = (v: FeedVideo) => tagScore(v) * 2 + engagement(v);
+    out = [...out].sort((a, b) => score(b) - score(a));
     return out;
   };
 
