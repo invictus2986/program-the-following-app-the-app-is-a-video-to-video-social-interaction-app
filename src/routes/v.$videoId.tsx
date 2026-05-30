@@ -557,7 +557,7 @@ function WatchPage() {
                 setSubmitting(false);
                 if (error) toast.error(error.message);
                 else {
-                  toast.success("Report submitted. Thanks for helping keep Wopla safe.");
+                  toast.success("Report submitted. Thanks for helping keep Jaiff safe.");
                   setReportOpen(false);
                   setReportDetails("");
                   setReportReason("inappropriate");

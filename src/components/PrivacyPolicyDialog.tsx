@@ -47,7 +47,7 @@ export function PrivacyPolicyDialog({ open, onOpenChange, onAccept, busy, accept
             onScroll={handleScroll}
             className="max-h-[55vh] overflow-y-auto px-5 py-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap"
           >
-{`Wopla Privacy Policy
+{`Jaiff Privacy Policy
 
 Last Updated: May 26, 2026
 

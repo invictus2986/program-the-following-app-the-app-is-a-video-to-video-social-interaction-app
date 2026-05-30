@@ -159,7 +159,7 @@ function RecordPage() {
     const w = videoEl.videoWidth || 720;
     const h = videoEl.videoHeight || 1280;
 
-    // Composite the camera feed onto a canvas so we can burn a "Wopla"
+    // Composite the camera feed onto a canvas so we can burn a "Jaiff"
     // watermark into every recorded frame.
     const canvas = document.createElement("canvas");
     canvas.width = w;
@@ -181,9 +181,9 @@ function RecordPage() {
         const x = w - Math.round(fontSize * 0.7);
         const y = h - Math.round(fontSize * 0.5);
         ctx.fillStyle = "rgba(0,0,0,0.55)";
-        ctx.fillText("Wopla", x + 1, y + 1);
+        ctx.fillText("Jaiff", x + 1, y + 1);
         ctx.fillStyle = "rgba(255,255,255,0.92)";
-        ctx.fillText("Wopla", x, y);
+        ctx.fillText("Jaiff", x, y);
       } catch {
         // ignore transient draw errors (e.g. video not ready)
       }
