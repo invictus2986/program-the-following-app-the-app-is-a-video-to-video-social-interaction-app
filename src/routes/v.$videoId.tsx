@@ -373,7 +373,7 @@ function WatchPage() {
             >
               <Repeat2 className="h-4 w-4 mr-1" /> Reply with video
             </Button>
-            {user && user.id === video.user_id && (
+            {user && (user.id === video.user_id || canManage) && (
               <Button onClick={() => setDeleteOpen(true)} variant="outline" className="rounded-full text-destructive hover:text-destructive">
                 <Trash2 className="h-4 w-4 mr-1" /> Delete
               </Button>
