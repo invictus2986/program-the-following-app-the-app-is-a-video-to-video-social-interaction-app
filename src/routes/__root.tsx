@@ -75,9 +75,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "WOPLA — Video conversations" },
+      { title: "JAIFF — Video conversations" },
       { name: "description", content: "A video-only social app. Post a video, reply with a video. No comments. No typing." },
-      { property: "og:title", content: "WOPLA — Video conversations" },
+      { property: "og:title", content: "JAIFF — Video conversations" },
       { property: "og:description", content: "Post a video, reply with a video. No comments. No typing." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

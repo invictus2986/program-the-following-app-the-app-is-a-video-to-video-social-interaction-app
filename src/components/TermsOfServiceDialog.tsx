@@ -52,7 +52,7 @@ export function TermsOfServiceDialog({ open, onOpenChange, onAccept, busy, accep
 
 1. Acceptance of Terms
 
-Welcome to Wopla ("Platform," "we," "our," or "us"), a service owned and operated by Unapse.
+Welcome to Jaiff ("Platform," "we," "our," or "us"), a service owned and operated by Unapse.
 
 By creating an account, accessing the Platform, recording a video, posting content, or clicking "I Agree," you acknowledge that you have read, understood, and agree to be bound by these Terms of Service ("Terms").
 
@@ -75,7 +75,7 @@ Parents and legal guardians who permit a minor to use the Platform agree to supe
 
 3. Nature of the Platform
 
-Wopla is a public video conversation service that allows users to:
+Jaiff is a public video conversation service that allows users to:
 
 Record videos directly within the app;
 Publish video posts;

@@ -78,7 +78,7 @@ function ProfilePage() {
     });
     setSubmittingReport(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Report submitted. Thanks for keeping WOPLA safe.");
+    toast.success("Report submitted. Thanks for keeping JAIFF safe.");
     setReportOpen(false);
     setReportDetails("");
     setReportReason("inappropriate");

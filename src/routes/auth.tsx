@@ -121,7 +121,7 @@ function AuthPage() {
     <AppShell>
       <div className="max-w-md mx-auto px-4 py-16">
         <div className="rounded-3xl bg-card border border-border p-8 shadow-[var(--shadow-elev)]">
-          <h1 className="text-3xl font-display font-bold mb-2">{mode === "signin" ? "Welcome back" : "Join WOPLA"}</h1>
+          <h1 className="text-3xl font-display font-bold mb-2">{mode === "signin" ? "Welcome back" : "Join JAIFF"}</h1>
           <p className="text-muted-foreground text-sm mb-6">
             {mode === "signin" ? "Sign in to post and reply with video." : "Pick a handle. The world will see it."}
           </p>
