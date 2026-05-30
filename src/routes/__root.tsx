@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { PlayerProvider } from "@/components/VideoPlayer";
+import { TosGate } from "@/components/TosGate";
 
 function NotFoundComponent() {
   return (
@@ -118,6 +119,7 @@ function RootComponent() {
       <AuthProvider>
         <PlayerProvider>
           <Outlet />
+          <TosGate />
           <Toaster />
         </PlayerProvider>
       </AuthProvider>

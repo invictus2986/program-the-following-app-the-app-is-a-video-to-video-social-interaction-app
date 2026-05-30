@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Props = {
   open: boolean;
@@ -25,6 +24,16 @@ export function TermsOfServiceDialog({ open, onOpenChange, onAccept, busy, accep
     }
   }, [open]);
 
+  // If the content fits without scrolling, enable the checkbox immediately.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = viewportRef.current;
+    if (!el) return;
+    if (el.scrollHeight - el.clientHeight < 24) {
+      setScrolledToEnd(true);
+    }
+  }, [open]);
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 24) {
@@ -42,12 +51,11 @@ export function TermsOfServiceDialog({ open, onOpenChange, onAccept, busy, accep
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="h-[55vh] rounded-md border bg-muted/30">
-          <div
-            ref={viewportRef}
-            onScroll={handleScroll}
-            className="max-h-[55vh] overflow-y-auto px-5 py-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap"
-          >
+        <div
+          ref={viewportRef}
+          onScroll={handleScroll}
+          className="h-[55vh] overflow-y-auto rounded-md border bg-muted/30 px-5 py-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap"
+        >
 {`TERMS OF SERVICE
 
 1. Acceptance of Terms
@@ -351,15 +359,15 @@ Business Address: 7533 S Center View Ct Ste N West Jordan UT 84084
 
 Email: Podgorskiy.serge@gmail.com
 `}
-          </div>
-        </ScrollArea>
+        </div>
 
         {!scrolledToEnd && (
           <p className="text-xs text-muted-foreground -mt-2">Scroll to the bottom to enable the agreement checkbox.</p>
         )}
 
-        <label className={`flex items-center gap-2 text-sm ${scrolledToEnd ? "" : "opacity-50 pointer-events-none"}`}>
+        <label className={`flex items-center gap-2 text-sm cursor-pointer ${scrolledToEnd ? "" : "opacity-50 pointer-events-none"}`}>
           <Checkbox
+            id="tos-agree"
             checked={agreed}
             onCheckedChange={(v) => setAgreed(v === true)}
             disabled={!scrolledToEnd}
