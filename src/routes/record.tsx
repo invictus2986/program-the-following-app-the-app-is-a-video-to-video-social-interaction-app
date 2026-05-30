@@ -282,8 +282,9 @@ function RecordPage() {
           storage_path: path,
           duration_seconds: elapsed,
           parent_reply_id: parentReplyId ?? null,
-        }).select("id").single();
+        }).select("id").maybeSingle();
         if (error) throw error;
+        if (!rep) throw new Error("Reply was saved but could not be read back.");
         try {
           const { recordPostIp } = await import("@/lib/moderation.functions");
           await recordPostIp({ data: { replyId: rep.id } });
@@ -303,8 +304,9 @@ function RecordPage() {
             thumbnail_url: thumbnailUrl,
           })
           .select("id")
-          .single();
+          .maybeSingle();
         if (error) throw error;
+        if (!data) throw new Error("Video was saved but could not be read back.");
         try {
           const { recordPostIp } = await import("@/lib/moderation.functions");
           await recordPostIp({ data: { videoId: data.id } });

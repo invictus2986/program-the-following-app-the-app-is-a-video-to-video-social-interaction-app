@@ -27,7 +27,10 @@ function NotificationsPage() {
   }, [loading, user, navigate]);
 
   const load = async () => {
-    if (!user) return;
+    if (!user) {
+      setBusy(false);
+      return;
+    }
     setBusy(true);
     const { data: notifs } = await supabase
       .from("notifications")
