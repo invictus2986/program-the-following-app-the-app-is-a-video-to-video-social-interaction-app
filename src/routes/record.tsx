@@ -11,6 +11,22 @@ import { Circle, Square, Upload, RefreshCw, ArrowLeft } from "lucide-react";
 import { extractHashtags } from "@/lib/video";
 import { toast } from "sonner";
 
+const R2_UPLOAD_ENDPOINT = "https://upload.jaiff.com/get-upload-url";
+
+async function uploadToR2(file: Blob, filename: string): Promise<string> {
+  const res = await fetch(`${R2_UPLOAD_ENDPOINT}?filename=${encodeURIComponent(filename)}`);
+  if (!res.ok) throw new Error(`Couldn't get upload URL (${res.status})`);
+  const { uploadUrl, fileUrl } = (await res.json()) as { uploadUrl: string; fileUrl: string; key?: string };
+  if (!uploadUrl || !fileUrl) throw new Error("Upload URL response missing fields");
+  const put = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+  });
+  if (!put.ok) throw new Error(`Upload to R2 failed (${put.status})`);
+  return fileUrl;
+}
+
 async function captureThumbnail(videoBlob: Blob): Promise<Blob | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(videoBlob);
@@ -254,22 +270,18 @@ function RecordPage() {
     try {
       const ext = blob.type.includes("webm") ? "webm" : "mp4";
       const folder = user.id;
-      const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("videos").upload(path, blob, { contentType: blob.type, upsert: false });
-      if (upErr) throw upErr;
+      const rand = Math.random().toString(36).slice(2, 8);
+      const filename = `${folder}/${Date.now()}-${rand}.${ext}`;
+      // storage_path now holds the full R2 playback URL for new uploads.
+      const path = await uploadToR2(blob, filename);
 
       // Capture thumbnail from a real frame (~1s in) and upload as JPEG.
       let thumbnailUrl: string | null = null;
       try {
         const thumb = await captureThumbnail(blob);
         if (thumb) {
-          const thumbPath = `${folder}/thumbs/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-          const { error: tErr } = await supabase.storage
-            .from("videos")
-            .upload(thumbPath, thumb, { contentType: "image/jpeg", upsert: false });
-          if (!tErr) {
-            thumbnailUrl = supabase.storage.from("videos").getPublicUrl(thumbPath).data.publicUrl;
-          }
+          const thumbName = `${folder}/thumbs/${Date.now()}-${rand}.jpg`;
+          thumbnailUrl = await uploadToR2(thumb, thumbName);
         }
       } catch {
         // Non-fatal: video still posts without a thumbnail.
