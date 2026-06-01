@@ -34,6 +34,9 @@ export async function attachProfiles<T extends { user_id: string }>(rows: T[]): 
 }
 
 export function publicUrl(path: string) {
+  // New uploads (Cloudflare R2) store the full https:// playback URL.
+  if (/^https?:\/\//i.test(path)) return path;
+  // Legacy uploads still live in Supabase Storage.
   return supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
 }
 
