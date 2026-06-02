@@ -2,10 +2,8 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "jaiff-app",
   "compatibility_date": "2026-06-02",
-  "compatibility_flags": ["nodejs_compat"],
-  "main": ".output/server/index.js",
-  "assets": {
-    "directory": ".output/client",
-    "binding": "ASSETS"
-  }
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": "@tanstack/react-start/server-entry"
 }
