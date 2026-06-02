@@ -221,6 +221,22 @@ function AdminAnnouncements() {
         video_duration_seconds,
       });
       if (error) throw error;
+
+      // Also publish video announcements to the admin's profile feed so
+      // viewers can reply to them like any other video.
+      if (video_storage_path) {
+        const caption = [title.trim(), body.trim()].filter(Boolean).join(" — ").slice(0, 2000);
+        const { error: vErr } = await supabase.from("videos").insert({
+          user_id: user.id,
+          storage_path: video_storage_path,
+          caption: caption || null,
+          thumbnail_url: video_thumbnail_url,
+          duration_seconds: video_duration_seconds,
+          hashtags: ["announcement"],
+        });
+        if (vErr) console.error("Failed to mirror announcement to profile:", vErr);
+      }
+
       setTitle(""); setBody(""); setPinned(true);
       onPickVideo(null);
       toast.success("Announcement posted");
