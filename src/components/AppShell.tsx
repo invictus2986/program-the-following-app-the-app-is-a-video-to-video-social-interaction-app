@@ -42,7 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="h-7 w-7 rounded-xl bg-[image:var(--gradient-mint)] shadow-[var(--shadow-glow)] grid place-items-center">
               <Video className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="font-display text-lg font-bold tracking-tight">JAIFF</span>
+            <span className="text-xl font-bold tracking-widest" style={{ fontFamily: "'Bungee', system-ui, sans-serif" }}>JAIFF</span>
           </Link>
           <nav className="flex items-center gap-1">
             {user && profile ? (
