@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, MessageSquare, Play } from "lucide-react";
+import { Eye, Heart, MessageSquare, Play } from "lucide-react";
 import { publicUrl, formatDuration, formatCount } from "@/lib/video";
 
 export type FeedVideo = {
@@ -98,6 +98,7 @@ function VideoCard({ v, onPlay }: { v: FeedVideo; onPlay?: () => void }) {
         </div>
         {v.caption && <p className="text-xs line-clamp-2 opacity-90">{v.caption}</p>}
         <div className="flex items-center gap-3 mt-2 text-[11px] opacity-90">
+          <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {formatCount(v.views_count)}</span>
           <span className="flex items-center gap-1"><Heart className="h-3 w-3" /> {formatCount(v.likes_count)}</span>
           <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {formatCount(v.replies_count)}</span>
         </div>
