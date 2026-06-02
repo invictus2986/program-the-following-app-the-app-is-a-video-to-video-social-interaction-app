@@ -86,6 +86,9 @@ function VideoCard({ v, onPlay }: { v: FeedVideo; onPlay?: () => void }) {
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+      <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 backdrop-blur text-[10px] font-semibold text-white">
+        <Eye className="h-3 w-3" /> {formatCount(v.views_count)}
+      </div>
       <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 backdrop-blur text-[10px] font-semibold text-white">
         <Play className="h-3 w-3" /> {formatDuration(v.duration_seconds)}
       </div>
@@ -98,7 +101,6 @@ function VideoCard({ v, onPlay }: { v: FeedVideo; onPlay?: () => void }) {
         </div>
         {v.caption && <p className="text-xs line-clamp-2 opacity-90">{v.caption}</p>}
         <div className="flex items-center gap-3 mt-2 text-[11px] opacity-90">
-          <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {formatCount(v.views_count)}</span>
           <span className="flex items-center gap-1"><Heart className="h-3 w-3" /> {formatCount(v.likes_count)}</span>
           <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {formatCount(v.replies_count)}</span>
         </div>
