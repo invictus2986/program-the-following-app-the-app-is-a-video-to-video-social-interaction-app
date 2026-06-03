@@ -32,4 +32,5 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           ls -la dist/client | head -5
-          bunx wrangler@latest deploy --config dist/server/wrangler.json --experimental-autoconfig=false
+          rm -rf .wrangler
+          bunx wrangler@latest deploy dist/server/index.mjs --name tanstack-start-ts --assets dist/client --compatibility-date 2026-06-03 --compatibility-flag nodejs_compat --no-bundle --experimental-autoconfig=false
