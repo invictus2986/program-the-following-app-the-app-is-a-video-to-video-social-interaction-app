@@ -19,17 +19,8 @@ jobs:
 
       - run: bun run build
 
-      - name: List build output
-        run: |
-          echo "=== dist/server ==="
-          ls -la dist/server/ 2>/dev/null || echo "NOT FOUND"
-          echo "=== dist/client ==="
-          ls -la dist/client/ 2>/dev/null || echo "NOT FOUND"
-          echo "=== wrangler.json in dist/server ==="
-          cat dist/server/wrangler.json 2>/dev/null || echo "NOT FOUND"
-
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config dist/server/wrangler.json
+          command: deploy
