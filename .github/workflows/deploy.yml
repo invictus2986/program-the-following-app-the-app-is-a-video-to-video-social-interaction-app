@@ -19,8 +19,16 @@ jobs:
 
       - run: bun run build
 
+      - name: Verify build output
+        run: |
+          echo "=== dist/server ==="
+          ls -la dist/server/ || echo "MISSING"
+          echo "=== dist/client ==="
+          ls -la dist/client/ || echo "MISSING"
+
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config dist/server/wrangler.json
+          workingDirectory: dist/server
+          command: deploy
