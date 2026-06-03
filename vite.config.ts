@@ -12,5 +12,14 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
-  nitro: true,
+  nitro: {
+    cloudflare: {
+      pages: {
+        routes: {
+          include: ["/**"],
+          exclude: ["/assets/*", "/favicon.ico"]
+        }
+      }
+    }
+  },
 });
