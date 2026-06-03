@@ -1,11 +1,8 @@
 {
-
-  // Cloudflare Pages configuration
-
   "name": "jaiff",
-
   "compatibility_date": "2026-06-01",
-
-  "pages_build_output_dir": "./dist/client"
-
+  "pages_build_output_dir": "./dist/client",
+  "assets": {
+    "binding": "ASSETS"
+  }
 }
