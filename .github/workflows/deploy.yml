@@ -31,4 +31,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: dist/server
-          command: deploy --assets ../client
+          command: deploy --config wrangler.json --name jaiff-app --assets ../client
