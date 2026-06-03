@@ -33,4 +33,4 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           ls -la ../client | head -5
-          bunx wrangler@latest deploy
+          bunx wrangler@latest deploy --config wrangler.json --experimental-autoconfig=false
