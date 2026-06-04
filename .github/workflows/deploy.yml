@@ -40,18 +40,26 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WORKER_NAME: tanstack-start-ts
         run: |
+          # Force a short, valid worker name. Cloudflare rejects names >63 chars
+          # or with invalid characters; Nitro's auto-generated name on CI can
+          # exceed that limit when derived from the repo name.
+          if [ -f dist/server/wrangler.json ]; then
+            node -e "const f='dist/server/wrangler.json';const j=JSON.parse(require('fs').readFileSync(f,'utf8'));j.name=process.env.WORKER_NAME;require('fs').writeFileSync(f,JSON.stringify(j,null,2));console.log('patched worker name ->',j.name);"
+          fi
+
           if [ -f dist/server/wrangler.json ]; then
             echo "=== Deploying with generated config dist/server/wrangler.json ==="
             cat dist/server/wrangler.json
-            bunx wrangler@latest deploy --config dist/server/wrangler.json
+            bunx wrangler@latest deploy --config dist/server/wrangler.json --name "$WORKER_NAME"
             exit 0
           fi
 
           if [ -f dist/server/wrangler.jsonc ]; then
             echo "=== Deploying with generated config dist/server/wrangler.jsonc ==="
             cat dist/server/wrangler.jsonc
-            bunx wrangler@latest deploy --config dist/server/wrangler.jsonc
+            bunx wrangler@latest deploy --config dist/server/wrangler.jsonc --name "$WORKER_NAME"
             exit 0
           fi
 
@@ -69,7 +77,7 @@ jobs:
 
           if [ -f dist/server/index.mjs ] && [ -d dist/client ]; then
             echo "=== Falling back to direct worker deploy ==="
-            bunx wrangler@latest deploy dist/server/index.mjs --assets dist/client
+            bunx wrangler@latest deploy dist/server/index.mjs --assets dist/client --name "$WORKER_NAME"
             exit 0
           fi
 
