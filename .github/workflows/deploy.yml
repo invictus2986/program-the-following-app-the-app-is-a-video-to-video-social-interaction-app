@@ -21,10 +21,10 @@ jobs:
 
       - name: Verify build output
         run: |
-          echo "=== dist/server ==="
-          ls -la dist/server/ || echo "MISSING"
-          echo "=== dist/client ==="
-          ls -la dist/client/ || echo "MISSING"
+          echo "=== .output/server ==="
+          ls -la .output/server/ || echo "MISSING"
+          echo "=== .output/public ==="
+          ls -la .output/public/ || echo "MISSING"
 
       - name: Deploy to Cloudflare
         env:
@@ -32,25 +32,22 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           rm -rf .wrangler
-          echo "=== dist/server contents ==="
-          ls -la dist/server/
+          echo "=== .output/server contents ==="
+          ls -la .output/server/ || true
           echo "=== choosing deploy target ==="
-          if [ -f dist/server/wrangler.json ]; then
-            echo "Using generated wrangler config from dist/server"
-            cd dist/server && bunx wrangler@latest deploy --experimental-autoconfig=false
-          elif [ -f dist/server/index.mjs ] && [ -d dist/client ]; then
-            echo "Using index.mjs + dist/client assets"
-            bunx wrangler@latest deploy dist/server/index.mjs --name tanstack-start-ts --assets dist/client --compatibility-date 2026-06-03 --compatibility-flag nodejs_compat --no-bundle --experimental-autoconfig=false
-          elif [ -f dist/server/server.js ] && [ -d dist/server/assets ]; then
-            echo "Using server.js + dist/server/assets"
-            bunx wrangler@latest deploy dist/server/server.js --name tanstack-start-ts --assets dist/server/assets --compatibility-date 2026-06-03 --compatibility-flag nodejs_compat --no-bundle --experimental-autoconfig=false
+          if [ -f .output/server/wrangler.json ]; then
+            echo "Using Nitro-generated wrangler config from .output/server"
+            cd .output/server && bunx wrangler@latest deploy --experimental-autoconfig=false
+          elif [ -f .output/server/index.mjs ] && [ -d .output/public ]; then
+            echo "Using .output/server/index.mjs + .output/public assets"
+            bunx wrangler@latest deploy .output/server/index.mjs --name tanstack-start-ts --assets .output/public --compatibility-date 2026-06-03 --compatibility-flag nodejs_compat --no-bundle --experimental-autoconfig=false
           else
             echo "No supported Cloudflare deploy output found"
-            echo "=== dist ==="
-            ls -la dist/ || true
-            echo "=== dist/server ==="
-            ls -la dist/server/ || true
-            echo "=== dist/client ==="
-            ls -la dist/client/ || true
+            echo "=== .output ==="
+            ls -la .output/ || true
+            echo "=== .output/server ==="
+            ls -la .output/server/ || true
+            echo "=== .output/public ==="
+            ls -la .output/public/ || true
             exit 1
           fi
