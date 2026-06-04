@@ -12,15 +12,5 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
-  nitro: {
-    // Pin the Cloudflare Worker name. Without this, Nitro auto-derives it
-    // from the project/repo name, which on CI produced a >63 char name and
-    // Cloudflare rejected the deploy with a 400 on /workers/scripts/<name>.
-    cloudflare: {
-      deployConfig: true,
-      wrangler: {
-        name: "tanstack-start-ts",
-      },
-    },
-  },
+  nitro: true,
 });
