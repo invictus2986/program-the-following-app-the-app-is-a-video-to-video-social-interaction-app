@@ -17,14 +17,18 @@ jobs:
 
       - run: bun install
 
-      - run: npm run build
+      - run: bun run build
 
       - name: Verify build output
         run: |
+          echo "=== dist ==="
+          ls -la dist/ || echo "MISSING"
           echo "=== dist/server ==="
           ls -la dist/server/ || echo "MISSING"
           echo "=== dist/client ==="
           ls -la dist/client/ || echo "MISSING"
+          echo "=== dist tree ==="
+          find dist -maxdepth 2 -type f | sort || true
 
       - name: Deploy to Cloudflare
         env:
@@ -32,11 +36,27 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           rm -rf .wrangler
-          if [ ! -f dist/server/wrangler.json ]; then
-            echo "::error::Missing dist/server/wrangler.json — build did not produce a Nitro Cloudflare bundle"
-            ls -la dist/ dist/server/ dist/client/ || true
-            exit 1
+
+          if [ -f dist/server/wrangler.json ]; then
+            echo "=== Deploying with generated config dist/server/wrangler.json ==="
+            cat dist/server/wrangler.json
+            bunx wrangler@latest deploy --config dist/server/wrangler.json
+            exit 0
           fi
-          echo "=== Deploying with config: ==="
-          cat dist/server/wrangler.json
-          cd dist/server && bunx wrangler@latest deploy
+
+          if [ -f dist/server/wrangler.jsonc ]; then
+            echo "=== Deploying with generated config dist/server/wrangler.jsonc ==="
+            cat dist/server/wrangler.jsonc
+            bunx wrangler@latest deploy --config dist/server/wrangler.jsonc
+            exit 0
+          fi
+
+          if [ -f dist/server/index.mjs ] && [ -d dist/client ]; then
+            echo "=== Falling back to direct worker deploy ==="
+            bunx wrangler@latest deploy dist/server/index.mjs --assets dist/client
+            exit 0
+          fi
+
+          echo "::error::No deployable Cloudflare worker output was found"
+          ls -la dist dist/server dist/client || true
+          exit 1
