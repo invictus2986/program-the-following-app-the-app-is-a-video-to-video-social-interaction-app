@@ -1,8 +1,0 @@
-{
-  "name": "jaiff",
-  "compatibility_date": "2026-06-01",
-  "pages_build_output_dir": "./dist/client",
-  "assets": {
-    "binding": "STATIC_ASSETS"
-  }
-}
