@@ -19,29 +19,34 @@ const renameAssetsBinding = (): PluginOption => ({
     order: "post",
     sequential: true,
     async handler() {
-      const path = resolve(process.cwd(), ".output/server/wrangler.json");
-      try {
-        const raw = await readFile(path, "utf8");
-        const cfg = JSON.parse(raw);
-        let changed = false;
-        if (cfg?.assets?.binding === "ASSETS") {
-          cfg.assets.binding = "STATIC_ASSETS";
-          changed = true;
-        }
-        if (Array.isArray(cfg?.bindings)) {
-          for (const b of cfg.bindings) {
-            if (b?.type === "assets" && b?.name === "ASSETS") {
-              b.name = "STATIC_ASSETS";
-              changed = true;
+      const candidates = [
+        resolve(process.cwd(), "dist/server/wrangler.json"),
+        resolve(process.cwd(), ".output/server/wrangler.json"),
+      ];
+      for (const path of candidates) {
+        try {
+          const raw = await readFile(path, "utf8");
+          const cfg = JSON.parse(raw);
+          let changed = false;
+          if (cfg?.assets?.binding === "ASSETS") {
+            cfg.assets.binding = "STATIC_ASSETS";
+            changed = true;
+          }
+          if (Array.isArray(cfg?.bindings)) {
+            for (const b of cfg.bindings) {
+              if (b?.type === "assets" && b?.name === "ASSETS") {
+                b.name = "STATIC_ASSETS";
+                changed = true;
+              }
             }
           }
+          if (changed) {
+            await writeFile(path, JSON.stringify(cfg, null, 2));
+            console.log("[lovable] Renamed ASSETS binding -> STATIC_ASSETS in", path);
+          }
+        } catch (err: unknown) {
+          if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") throw err;
         }
-        if (changed) {
-          await writeFile(path, JSON.stringify(cfg, null, 2));
-          console.log("[lovable] Renamed ASSETS binding -> STATIC_ASSETS in", path);
-        }
-      } catch (err: unknown) {
-        if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") throw err;
       }
     },
   },
