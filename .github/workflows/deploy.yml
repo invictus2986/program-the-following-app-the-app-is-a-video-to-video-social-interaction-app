@@ -37,10 +37,10 @@ jobs:
           echo "=== choosing deploy target ==="
           if [ -f dist/server/wrangler.json ]; then
             echo "Using Nitro-generated wrangler config from dist/server"
-            cd dist/server && bunx wrangler@latest deploy --experimental-autoconfig=false
+            cd dist/server && bunx wrangler@latest deploy
           elif [ -f dist/server/index.mjs ] && [ -d dist/client ]; then
             echo "Using dist/server/index.mjs + dist/client assets"
-            bunx wrangler@latest deploy dist/server/index.mjs --name tanstack-start-ts --assets dist/client --compatibility-date 2026-06-03 --compatibility-flag nodejs_compat --no-bundle --experimental-autoconfig=false
+            bunx wrangler@latest deploy dist/server/index.mjs --name tanstack-start-ts --assets dist/client --compatibility-date 2026-06-03 --compatibility-flag nodejs_compat --no-bundle
           else
             echo "No supported Cloudflare deploy output found"
             echo "=== dist ==="
