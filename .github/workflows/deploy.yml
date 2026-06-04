@@ -27,16 +27,20 @@ jobs:
           ls -la dist/server/ || echo "MISSING"
           echo "=== dist/client ==="
           ls -la dist/client/ || echo "MISSING"
+          echo "=== .output ==="
+          ls -la .output/ 2>/dev/null || echo "no .output"
           echo "=== dist tree ==="
-          find dist -maxdepth 2 -type f | sort || true
+          find dist -maxdepth 3 -type f 2>/dev/null | sort || true
+          echo "=== .output tree ==="
+          find .output -maxdepth 3 -type f 2>/dev/null | sort || true
+          echo "=== .wrangler tree ==="
+          find .wrangler -maxdepth 4 -type f 2>/dev/null | sort || true
 
       - name: Deploy to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          rm -rf .wrangler
-
           if [ -f dist/server/wrangler.json ]; then
             echo "=== Deploying with generated config dist/server/wrangler.json ==="
             cat dist/server/wrangler.json
@@ -51,6 +55,18 @@ jobs:
             exit 0
           fi
 
+          if [ -f dist/nitro.json ]; then
+            echo "=== Deploying with nitro --prebuilt ==="
+            bunx nitro deploy --prebuilt
+            exit 0
+          fi
+
+          if [ -d .output ]; then
+            echo "=== Deploying with nitro --prebuilt from .output ==="
+            bunx nitro deploy --prebuilt
+            exit 0
+          fi
+
           if [ -f dist/server/index.mjs ] && [ -d dist/client ]; then
             echo "=== Falling back to direct worker deploy ==="
             bunx wrangler@latest deploy dist/server/index.mjs --assets dist/client
@@ -58,5 +74,5 @@ jobs:
           fi
 
           echo "::error::No deployable Cloudflare worker output was found"
-          ls -la dist dist/server dist/client || true
+          ls -la dist dist/server dist/client .output 2>&1 || true
           exit 1
