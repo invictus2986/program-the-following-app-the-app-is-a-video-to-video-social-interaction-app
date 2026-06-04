@@ -32,22 +32,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           rm -rf .wrangler
-          echo "=== dist/server contents ==="
-          ls -la dist/server/ || true
-          echo "=== choosing deploy target ==="
-          if [ -f dist/server/wrangler.json ]; then
-            echo "Using Nitro-generated wrangler config from dist/server"
-            cd dist/server && bunx wrangler@latest deploy
-          elif [ -f dist/server/index.mjs ] && [ -d dist/client ]; then
-            echo "Using dist/server/index.mjs + dist/client assets"
-            bunx wrangler@latest deploy dist/server/index.mjs --name tanstack-start-ts --assets dist/client --compatibility-date 2026-06-03 --compatibility-flag nodejs_compat --no-bundle
-          else
-            echo "No supported Cloudflare deploy output found"
-            echo "=== dist ==="
-            ls -la dist/ || true
-            echo "=== dist/server ==="
-            ls -la dist/server/ || true
-            echo "=== dist/client ==="
-            ls -la dist/client/ || true
+          if [ ! -f dist/server/wrangler.json ]; then
+            echo "::error::Missing dist/server/wrangler.json — build did not produce a Nitro Cloudflare bundle"
+            ls -la dist/ dist/server/ dist/client/ || true
             exit 1
           fi
+          echo "=== Deploying with config: ==="
+          cat dist/server/wrangler.json
+          cd dist/server && bunx wrangler@latest deploy
