@@ -11,19 +11,38 @@ import { Circle, Square, Upload, RefreshCw, ArrowLeft } from "lucide-react";
 import { extractHashtags } from "@/lib/video";
 import { toast } from "sonner";
 
-const R2_UPLOAD_ENDPOINT = "https://upload.jaiff.com/get-upload-url";
+const R2_UPLOAD_ENDPOINT = "https://upload.jaiff.com/upload";
 
 async function uploadToR2(file: Blob, filename: string): Promise<string> {
-  const res = await fetch(`${R2_UPLOAD_ENDPOINT}?filename=${encodeURIComponent(filename)}`);
-  if (!res.ok) throw new Error(`Couldn't get upload URL (${res.status})`);
-  const { uploadUrl, fileUrl } = (await res.json()) as { uploadUrl: string; fileUrl: string; key?: string };
-  if (!uploadUrl || !fileUrl) throw new Error("Upload URL response missing fields");
-  const put = await fetch(uploadUrl, {
-    method: "PUT",
-    body: file,
-    headers: { "Content-Type": file.type || "application/octet-stream" },
-  });
-  if (!put.ok) throw new Error(`Upload to R2 failed (${put.status})`);
+  console.log(
+    "Uploading to:",
+    `${R2_UPLOAD_ENDPOINT}?filename=${encodeURIComponent(filename)}`
+  );
+
+  const res = await fetch(
+    `${R2_UPLOAD_ENDPOINT}?filename=${encodeURIComponent(filename)}`,
+    {
+      method: "POST",
+      body: file,
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Upload failed (${res.status})`);
+  }
+
+  const { fileUrl } = (await res.json()) as {
+    fileUrl: string;
+    key?: string;
+  };
+
+  if (!fileUrl) {
+    throw new Error("Upload response missing fileUrl");
+  }
+
   return fileUrl;
 }
 
@@ -74,6 +93,7 @@ export const Route = createFileRoute("/record")({
 });
 
 function RecordPage() {
+console.log("RECORD PAGE LOADED");
   const { replyTo, parentReplyId } = Route.useSearch();
   const isReply = !!replyTo;
   const maxSeconds = isReply ? 3 * 60 : 5 * 60;
