@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Jaiff</string>
+    <string name="title_activity_main">Jaiff</string>
+    <string name="package_name">com.jaiff.app</string>
+    <string name="custom_url_scheme">com.jaiff.app</string>
+</resources>

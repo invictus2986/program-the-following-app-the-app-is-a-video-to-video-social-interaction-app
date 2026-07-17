@@ -13,7 +13,11 @@ import { toast } from "sonner";
 
 const R2_UPLOAD_ENDPOINT = "https://upload.jaiff.com/upload";
 
-async function uploadToR2(file: Blob, filename: string): Promise<string> {
+async function uploadToR2(
+file: Blob,
+filename: string,
+accessToken: string
+): Promise<string> {
   console.log(
     "Uploading to:",
     `${R2_UPLOAD_ENDPOINT}?filename=${encodeURIComponent(filename)}`
@@ -26,6 +30,7 @@ async function uploadToR2(file: Blob, filename: string): Promise<string> {
       body: file,
       headers: {
         "Content-Type": file.type || "application/octet-stream",
+		"Authorization": `Bearer ${accessToken}`,
       },
     }
   );
@@ -97,7 +102,7 @@ console.log("RECORD PAGE LOADED");
   const { replyTo, parentReplyId } = Route.useSearch();
   const isReply = !!replyTo;
   const maxSeconds = isReply ? 3 * 60 : 5 * 60;
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
   const navigate = useNavigate();
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -293,7 +298,15 @@ console.log("RECORD PAGE LOADED");
       const rand = Math.random().toString(36).slice(2, 8);
       const filename = `${folder}/${Date.now()}-${rand}.${ext}`;
       // storage_path now holds the full R2 playback URL for new uploads.
-      const path = await uploadToR2(blob, filename);
+     if (!session?.access_token) {
+	 throw new Error("You must be logged in to upload");
+	 }
+	 
+	  const path = await uploadToR2(
+	  blob, 
+	  filename,
+	  session?.access_token || ""
+	  );
 
       // Capture thumbnail from a real frame (~1s in) and upload as JPEG.
       let thumbnailUrl: string | null = null;
@@ -301,7 +314,11 @@ console.log("RECORD PAGE LOADED");
         const thumb = await captureThumbnail(blob);
         if (thumb) {
           const thumbName = `${folder}/thumbs/${Date.now()}-${rand}.jpg`;
-          thumbnailUrl = await uploadToR2(thumb, thumbName);
+          thumbnailUrl = await uploadToR2(
+		  thumb,
+		  thumbName,
+		  session?.access_token || ""
+		  );
         }
       } catch {
         // Non-fatal: video still posts without a thumbnail.
