@@ -12,18 +12,11 @@
  * Content-Type and reads `{ fileUrl, key }` back from the JSON response.
  *
  * Required Worker bindings / vars:
- *   BUCKET                 R2 bucket binding
+ *   JAIFF_VIDEOS           R2 bucket binding
  *   PUBLIC_BASE_URL        e.g. https://cdn.jaiff.com  (public R2 / custom domain)
  *   SUPABASE_URL           https://<ref>.supabase.co
  *   SUPABASE_JWKS_URL      optional; defaults to `${SUPABASE_URL}/auth/v1/.well-known/jwks.json`
  */
-
-export interface Env {
-  JAIFF_VIDEOS: R2Bucket;
-  PUBLIC_BASE_URL: string;
-  SUPABASE_URL: string;
-  SUPABASE_JWKS_URL?: string;
-}
 
 const ALLOWED_ORIGINS = "*";
 const MAX_UPLOAD_BYTES = 500 * 1024 * 1024; // 500 MB hard cap
@@ -35,7 +28,7 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
-function json(body: unknown, status = 200, extra: HeadersInit = {}) {
+function json(body, status = 200, extra = {}) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -46,12 +39,12 @@ function json(body: unknown, status = 200, extra: HeadersInit = {}) {
   });
 }
 
-function textErr(msg: string, status: number) {
+function textErr(msg, status) {
   return new Response(msg, { status, headers: corsHeaders });
 }
 
 /** Verify the Supabase-issued JWT and return its `sub` (user id). */
-async function verifyBearer(request: Request, env: Env): Promise<string> {
+async function verifyBearer(request, env) {
   const auth = request.headers.get("authorization") || "";
   const m = auth.match(/^Bearer\s+(.+)$/i);
   if (!m) throw new Response("Missing bearer token", { status: 401, headers: corsHeaders });
@@ -67,13 +60,13 @@ async function verifyBearer(request: Request, env: Env): Promise<string> {
   if (!res.ok) {
     throw new Response("Invalid or expired token", { status: 401, headers: corsHeaders });
   }
-  const user = (await res.json()) as { id?: string };
+  const user = await res.json();
   if (!user?.id) throw new Response("Invalid token payload", { status: 401, headers: corsHeaders });
   return user.id;
 }
 
 /** Enforce that the object key lives under the caller's user-id folder. */
-function assertOwnsKey(userId: string, key: string) {
+function assertOwnsKey(userId, key) {
   if (!key || key.includes("..") || key.startsWith("/")) {
     throw textErr("Invalid filename", 400);
   }
@@ -84,7 +77,7 @@ function assertOwnsKey(userId: string, key: string) {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request, env) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
