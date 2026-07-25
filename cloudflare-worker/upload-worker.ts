@@ -19,7 +19,7 @@
  */
 
 export interface Env {
-  BUCKET: R2Bucket;
+  JAIFF_VIDEOS: R2Bucket;
   PUBLIC_BASE_URL: string;
   SUPABASE_URL: string;
   SUPABASE_JWKS_URL?: string;
@@ -111,7 +111,7 @@ export default {
 
         const contentType = request.headers.get("content-type") || "application/octet-stream";
 
-        await env.BUCKET.put(filename, request.body, {
+        await env.JAIFF_VIDEOS.put(filename, request.body, {
           httpMetadata: { contentType },
         });
 
@@ -125,7 +125,7 @@ export default {
         const key = url.searchParams.get("key");
         if (!key) return textErr("Missing key", 400);
         assertOwnsKey(userId, key);
-        await env.BUCKET.delete(key);
+        await env.JAIFF_VIDEOS.delete(key);
         return json({ ok: true });
       }
 
