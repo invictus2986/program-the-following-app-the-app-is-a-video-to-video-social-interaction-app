@@ -160,14 +160,37 @@ console.log("RECORD PAGE LOADED");
 
   const initCamera = async () => {
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast.error("This browser doesn't support camera access.");
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1080 } }, audio: true });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.error("video.play() failed:", playErr);
+          toast.error("Tap the screen to start the camera preview.");
+        }
       }
     } catch (e) {
-      toast.error("Couldn't access camera/mic. Please grant permission.");
+      console.error("getUserMedia failed:", e);
+      const err = e as DOMException;
+      if (err?.name === "NotAllowedError") {
+        toast.error("Camera/mic permission denied. Enable it in your browser settings.");
+      } else if (err?.name === "NotFoundError") {
+        toast.error("No camera found on this device.");
+      } else if (err?.name === "NotReadableError") {
+        toast.error("Camera is in use by another app. Close it and try again.");
+      } else if (location.protocol !== "https:" && location.hostname !== "localhost") {
+        toast.error("Camera requires HTTPS. Open the site via https://");
+      } else {
+        toast.error(`Camera error: ${err?.message || "unknown"}`);
+      }
     }
   };
 
@@ -394,7 +417,7 @@ console.log("RECORD PAGE LOADED");
 
         <div className="relative rounded-3xl overflow-hidden bg-black aspect-video shadow-[var(--shadow-elev)]">
           {stage !== "review" ? (
-            <video key="camera-preview" ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover scale-x-[-1]" />
+            <video key="camera-preview" ref={videoRef} autoPlay muted playsInline className="absolute inset-0 h-full w-full object-cover scale-x-[-1]" onClick={() => videoRef.current?.play().catch(() => {})} />
           ) : (
             <video
               key={previewUrl ?? "recording-preview"}
