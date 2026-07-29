@@ -54,11 +54,12 @@ async function verifyBearer(request, env) {
   const res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      apikey: token, // supabase-js sends both; the gateway accepts either
+      apikey: env.SUPABASE_ANON_KEY,
     },
   });
   if (!res.ok) {
-    throw new Response("Invalid or expired token", { status: 401, headers: corsHeaders });
+    const detail = await res.text();
+    throw new Response(`Supabase auth check failed: ${res.status} ${detail}`, { status: res.status, headers: corsHeaders });
   }
   const user = await res.json();
   if (!user?.id) throw new Response("Invalid token payload", { status: 401, headers: corsHeaders });
