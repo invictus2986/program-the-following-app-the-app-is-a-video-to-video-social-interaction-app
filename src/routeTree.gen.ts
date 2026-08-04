@@ -9,49 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as RecordRouteImport } from './routes/record'
-import { Route as NotificationsRouteImport } from './routes/notifications'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AnnouncementsRouteImport } from './routes/announcements'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AnnouncementsRouteImport } from './routes/announcements'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as RecordRouteImport } from './routes/record'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as VVideoIdRouteImport } from './routes/v.$videoId'
-import { Route as UUsernameRouteImport } from './routes/u.$username'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminUserReportsRouteImport } from './routes/admin.user-reports'
-import { Route as AdminStorageRouteImport } from './routes/admin.storage'
-import { Route as AdminReportsRouteImport } from './routes/admin.reports'
-import { Route as AdminLogRouteImport } from './routes/admin.log'
-import { Route as AdminArchiveRouteImport } from './routes/admin.archive'
-import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
-import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
+import { Route as AdminArchiveRouteImport } from './routes/admin.archive'
+import { Route as AdminLogRouteImport } from './routes/admin.log'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminStorageRouteImport } from './routes/admin.storage'
+import { Route as AdminUserReportsRouteImport } from './routes/admin.user-reports'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as VVideoIdRouteImport } from './routes/v.$videoId'
 
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RecordRoute = RecordRouteImport.update({
-  id: '/record',
-  path: '/record',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotificationsRoute = NotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AnnouncementsRoute = AnnouncementsRouteImport.update({
-  id: '/announcements',
-  path: '/announcements',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -59,9 +39,29 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AnnouncementsRoute = AnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecordRoute = RecordRouteImport.update({
+  id: '/record',
+  path: '/record',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -69,49 +69,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const VVideoIdRoute = VVideoIdRouteImport.update({
-  id: '/v/$videoId',
-  path: '/v/$videoId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UUsernameRoute = UUsernameRouteImport.update({
-  id: '/u/$username',
-  path: '/u/$username',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminUserReportsRoute = AdminUserReportsRouteImport.update({
-  id: '/user-reports',
-  path: '/user-reports',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStorageRoute = AdminStorageRouteImport.update({
-  id: '/storage',
-  path: '/storage',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminReportsRoute = AdminReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLogRoute = AdminLogRouteImport.update({
-  id: '/log',
-  path: '/log',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminArchiveRoute = AdminArchiveRouteImport.update({
-  id: '/archive',
-  path: '/archive',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
-  id: '/announcements',
-  path: '/announcements',
+const AdminAdminsRoute = AdminAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
@@ -119,10 +79,50 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAdminsRoute = AdminAdminsRouteImport.update({
-  id: '/admins',
-  path: '/admins',
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminArchiveRoute = AdminArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLogRoute = AdminLogRouteImport.update({
+  id: '/log',
+  path: '/log',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStorageRoute = AdminStorageRouteImport.update({
+  id: '/storage',
+  path: '/storage',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUserReportsRoute = AdminUserReportsRouteImport.update({
+  id: '/user-reports',
+  path: '/user-reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VVideoIdRoute = VVideoIdRouteImport.update({
+  id: '/v/$videoId',
+  path: '/v/$videoId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -267,39 +267,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/record': {
-      id: '/record'
-      path: '/record'
-      fullPath: '/record'
-      preLoaderRoute: typeof RecordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notifications': {
-      id: '/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof NotificationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/announcements': {
-      id: '/announcements'
-      path: '/announcements'
-      fullPath: '/announcements'
-      preLoaderRoute: typeof AnnouncementsRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -309,11 +281,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/announcements': {
+      id: '/announcements'
+      path: '/announcements'
+      fullPath: '/announcements'
+      preLoaderRoute: typeof AnnouncementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/record': {
+      id: '/record'
+      path: '/record'
+      fullPath: '/record'
+      preLoaderRoute: typeof RecordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -323,67 +323,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/v/$videoId': {
-      id: '/v/$videoId'
-      path: '/v/$videoId'
-      fullPath: '/v/$videoId'
-      preLoaderRoute: typeof VVideoIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/u/$username': {
-      id: '/u/$username'
-      path: '/u/$username'
-      fullPath: '/u/$username'
-      preLoaderRoute: typeof UUsernameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/user-reports': {
-      id: '/admin/user-reports'
-      path: '/user-reports'
-      fullPath: '/admin/user-reports'
-      preLoaderRoute: typeof AdminUserReportsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/storage': {
-      id: '/admin/storage'
-      path: '/storage'
-      fullPath: '/admin/storage'
-      preLoaderRoute: typeof AdminStorageRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/reports': {
-      id: '/admin/reports'
-      path: '/reports'
-      fullPath: '/admin/reports'
-      preLoaderRoute: typeof AdminReportsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/log': {
-      id: '/admin/log'
-      path: '/log'
-      fullPath: '/admin/log'
-      preLoaderRoute: typeof AdminLogRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/archive': {
-      id: '/admin/archive'
-      path: '/archive'
-      fullPath: '/admin/archive'
-      preLoaderRoute: typeof AdminArchiveRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/announcements': {
-      id: '/admin/announcements'
-      path: '/announcements'
-      fullPath: '/admin/announcements'
-      preLoaderRoute: typeof AdminAnnouncementsRouteImport
+    '/admin/admins': {
+      id: '/admin/admins'
+      path: '/admins'
+      fullPath: '/admin/admins'
+      preLoaderRoute: typeof AdminAdminsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/analytics': {
@@ -393,12 +337,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/admins': {
-      id: '/admin/admins'
-      path: '/admins'
-      fullPath: '/admin/admins'
-      preLoaderRoute: typeof AdminAdminsRouteImport
+    '/admin/announcements': {
+      id: '/admin/announcements'
+      path: '/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/archive': {
+      id: '/admin/archive'
+      path: '/archive'
+      fullPath: '/admin/archive'
+      preLoaderRoute: typeof AdminArchiveRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/log': {
+      id: '/admin/log'
+      path: '/log'
+      fullPath: '/admin/log'
+      preLoaderRoute: typeof AdminLogRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/storage': {
+      id: '/admin/storage'
+      path: '/storage'
+      fullPath: '/admin/storage'
+      preLoaderRoute: typeof AdminStorageRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/user-reports': {
+      id: '/admin/user-reports'
+      path: '/user-reports'
+      fullPath: '/admin/user-reports'
+      preLoaderRoute: typeof AdminUserReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v/$videoId': {
+      id: '/v/$videoId'
+      path: '/v/$videoId'
+      fullPath: '/v/$videoId'
+      preLoaderRoute: typeof VVideoIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -445,3 +445,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
