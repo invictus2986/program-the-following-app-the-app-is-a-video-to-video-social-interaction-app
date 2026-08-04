@@ -628,8 +628,9 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
     }
   }
 
-  // A deep branch (3+ videos in the chain) gets pulled to the top as a whole thread.
-  const promoteBranch = chain.length >= 3;
+  // Any highlighted branch gets pulled to the top as a whole thread.
+  const promoteBranch = chain.length >= 1;
+  const chainIds = new Set(chain.map((r) => r.id));
   const branchRootId = chain.length ? chain[0].id : null;
   if (branchRootId && !promoteBranch) {
     // Shallow highlight: just float the branch's root response to the top.
@@ -688,19 +689,20 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
         <li>
           <div className="rounded-2xl border border-primary/40 bg-primary/5 p-2 flex flex-col gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-primary px-1">
-              Conversation thread · {chain.length} videos
+              Conversation thread · {chain.length} {chain.length === 1 ? "video" : "videos"}
             </p>
             <ul className="flex flex-col gap-2">
-              {chain.map((r, i) => (
+              {[...chain].reverse().map((r, i) => (
                 <ListRow
                   key={r.id}
                   active={activeReply?.id === r.id}
-                  highlight={r.id === highlightId}
+                  highlight={chainIds.has(r.id)}
+                  scrollTo={r.id === highlightId}
                   title={`@${r.profiles?.username ?? "unknown"}`}
                   subtitle={
                     r.id === highlightId
                       ? "New reply to you"
-                      : `Step ${i + 1} · ${new Date(r.created_at).toLocaleDateString()}`
+                      : `Step ${chain.length - i} · ${new Date(r.created_at).toLocaleDateString()}`
                   }
                   thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
                   duration={r.duration_seconds}
@@ -775,6 +777,7 @@ function ListRow({
   duration,
   active,
   highlight,
+  scrollTo,
   onClick,
   onDelete,
   onReply,
@@ -786,16 +789,17 @@ function ListRow({
   duration: number | null;
   active?: boolean;
   highlight?: boolean;
+  scrollTo?: boolean;
   onClick: () => void;
   onDelete?: () => void;
   onReply?: () => void;
 }) {
   const rowRef = useRef<HTMLLIElement>(null);
   useEffect(() => {
-    if (highlight && rowRef.current) {
+    if ((scrollTo ?? highlight) && rowRef.current) {
       rowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [highlight]);
+  }, [highlight, scrollTo]);
   return (
     <li ref={rowRef}>
       <div

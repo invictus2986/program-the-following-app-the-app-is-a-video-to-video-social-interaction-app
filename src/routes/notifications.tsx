@@ -138,6 +138,9 @@ function NotificationItem({ item, onDelete }: { item: Item; onDelete: () => void
   } else if (item.type === "reply_to_video") {
     icon = <MessageSquare className="h-4 w-4 text-primary" />;
     text = "replied to your video";
+  } else if (item.type === "reply_to_reply") {
+    icon = <MessageSquare className="h-4 w-4 text-primary" />;
+    text = "replied to your reply";
   } else if (item.type === "like_reply") {
     icon = <Heart className="h-4 w-4 text-rose-500" />;
     text = "liked your reply";
