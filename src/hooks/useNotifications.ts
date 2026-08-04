@@ -6,7 +6,7 @@ export type NotificationRow = {
   id: string;
   user_id: string;
   actor_id: string;
-  type: "like_video" | "reply_to_video" | "like_reply";
+  type: "like_video" | "reply_to_video" | "reply_to_reply" | "like_reply";
   video_id: string | null;
   reply_id: string | null;
   read: boolean;
