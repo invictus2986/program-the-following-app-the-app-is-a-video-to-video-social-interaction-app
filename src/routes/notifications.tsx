@@ -144,7 +144,11 @@ function NotificationItem({ item, onDelete }: { item: Item; onDelete: () => void
   }
 
   const linkProps = item.video_id
-    ? { to: "/v/$videoId" as const, params: { videoId: item.video_id } }
+    ? {
+        to: "/v/$videoId" as const,
+        params: { videoId: item.video_id },
+        search: item.reply_id ? { highlight: item.reply_id } : {},
+      }
     : null;
 
   const time = new Date(item.created_at);
