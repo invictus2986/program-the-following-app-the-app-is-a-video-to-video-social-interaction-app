@@ -776,6 +776,7 @@ function ListRow({
   duration,
   active,
   highlight,
+  scrollTo,
   onClick,
   onDelete,
   onReply,
@@ -787,16 +788,17 @@ function ListRow({
   duration: number | null;
   active?: boolean;
   highlight?: boolean;
+  scrollTo?: boolean;
   onClick: () => void;
   onDelete?: () => void;
   onReply?: () => void;
 }) {
   const rowRef = useRef<HTMLLIElement>(null);
   useEffect(() => {
-    if (highlight && rowRef.current) {
+    if ((scrollTo ?? highlight) && rowRef.current) {
       rowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [highlight]);
+  }, [highlight, scrollTo]);
   return (
     <li ref={rowRef}>
       <div
