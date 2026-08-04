@@ -697,6 +697,7 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
                   key={r.id}
                   active={activeReply?.id === r.id}
                   highlight={chainIds.has(r.id)}
+                  scrollTo={r.id === highlightId}
                   title={`@${r.profiles?.username ?? "unknown"}`}
                   subtitle={
                     r.id === highlightId
