@@ -26,6 +26,7 @@ export const Route = createFileRoute("/v/$videoId")({
   component: WatchPage,
   validateSearch: (search: Record<string, unknown>) => ({
     reply: typeof search.reply === "string" ? (search.reply as string) : undefined,
+    highlight: typeof search.highlight === "string" ? (search.highlight as string) : undefined,
   }),
 });
 
@@ -54,7 +55,7 @@ type Reply = {
 
 function WatchPage() {
   const { videoId } = Route.useParams();
-  const { reply: replyParam } = Route.useSearch();
+  const { reply: replyParam, highlight: highlightParam } = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { permissions } = useAdminRole();
