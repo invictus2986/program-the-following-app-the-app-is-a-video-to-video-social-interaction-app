@@ -26,6 +26,7 @@ export const Route = createFileRoute("/v/$videoId")({
   component: WatchPage,
   validateSearch: (search: Record<string, unknown>) => ({
     reply: typeof search.reply === "string" ? (search.reply as string) : undefined,
+    highlight: typeof search.highlight === "string" ? (search.highlight as string) : undefined,
   }),
 });
 
@@ -54,7 +55,7 @@ type Reply = {
 
 function WatchPage() {
   const { videoId } = Route.useParams();
-  const { reply: replyParam } = Route.useSearch();
+  const { reply: replyParam, highlight: highlightParam } = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { permissions } = useAdminRole();
@@ -423,6 +424,7 @@ function WatchPage() {
               onAskDelete={setReplyToDelete}
               showAll={showAllResponses}
               setShowAll={setShowAllResponses}
+              highlightId={highlightParam ?? null}
             />
           )}
         </aside>
@@ -590,18 +592,54 @@ type ReplyListProps = {
   onAskDelete: (r: Reply) => void;
   showAll: boolean;
   setShowAll: (v: boolean) => void;
+  highlightId?: string | null;
 };
 
-function ReplyList({ replies, video, activeReply, canManage, user, navigate, onAskDelete, showAll, setShowAll }: ReplyListProps) {
+function ReplyList({ replies, video, activeReply, canManage, user, navigate, onAskDelete, showAll, setShowAll, highlightId }: ReplyListProps) {
   const ids = new Set(replies.map((r) => r.id));
   const parentOf = (r: Reply) => (r.parent_reply_id && ids.has(r.parent_reply_id) ? r.parent_reply_id : null);
 
   // Direct responses to the currently-watched item
   const currentId = activeReply?.id ?? null;
-  const responses = replies
+  let responses = replies
     .filter((r) => parentOf(r) === currentId)
     // Sort: rank proxy = recency (no like/view counts on replies). Newest first.
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+
+  const byId = new Map(replies.map((r) => [r.id, r]));
+
+  // Build the chain from the currently-watched item down to the highlighted reply.
+  // chain[0] is a direct response to the current item; the last entry is the highlight.
+  let chain: Reply[] = [];
+  const highlighted = highlightId ? byId.get(highlightId) ?? null : null;
+  if (highlighted) {
+    const path: Reply[] = [];
+    let cursor: Reply | null = highlighted;
+    const guard = new Set<string>();
+    while (cursor && !guard.has(cursor.id)) {
+      guard.add(cursor.id);
+      path.unshift(cursor);
+      const pid = parentOf(cursor);
+      if (pid === currentId) {
+        chain = path;
+        break;
+      }
+      cursor = pid ? byId.get(pid) ?? null : null;
+    }
+  }
+
+  // A deep branch (3+ videos in the chain) gets pulled to the top as a whole thread.
+  const promoteBranch = chain.length >= 3;
+  const branchRootId = chain.length ? chain[0].id : null;
+  if (branchRootId && !promoteBranch) {
+    // Shallow highlight: just float the branch's root response to the top.
+    responses = [
+      ...responses.filter((r) => r.id === branchRootId),
+      ...responses.filter((r) => r.id !== branchRootId),
+    ];
+  } else if (promoteBranch) {
+    responses = responses.filter((r) => r.id !== branchRootId);
+  }
 
   // Parent context item (shown first when viewing a reply)
   let parentItem: { kind: "original" } | { kind: "reply"; reply: Reply } | null = null;
@@ -646,6 +684,40 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
         />
       )}
 
+      {promoteBranch && (
+        <li>
+          <div className="rounded-2xl border border-primary/40 bg-primary/5 p-2 flex flex-col gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-primary px-1">
+              Conversation thread · {chain.length} videos
+            </p>
+            <ul className="flex flex-col gap-2">
+              {chain.map((r, i) => (
+                <ListRow
+                  key={r.id}
+                  active={activeReply?.id === r.id}
+                  highlight={r.id === highlightId}
+                  title={`@${r.profiles?.username ?? "unknown"}`}
+                  subtitle={
+                    r.id === highlightId
+                      ? "New reply to you"
+                      : `Step ${i + 1} · ${new Date(r.created_at).toLocaleDateString()}`
+                  }
+                  thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
+                  duration={r.duration_seconds}
+                  onClick={() => goToReply(r.id)}
+                  onDelete={canManage ? () => onAskDelete(r) : undefined}
+                  onReply={
+                    user
+                      ? () => navigate({ to: "/record", search: { replyTo: video.id, parentReplyId: r.id } })
+                      : undefined
+                  }
+                />
+              ))}
+            </ul>
+          </div>
+        </li>
+      )}
+
       {responses.length === 0 ? (
         <li className="text-sm text-muted-foreground py-4">
           No responses to this {activeReply ? "reply" : "video"} yet.
@@ -655,8 +727,9 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
           <ListRow
             key={r.id}
             active={activeReply?.id === r.id}
+            highlight={r.id === highlightId}
             title={`@${r.profiles?.username ?? "unknown"}`}
-            subtitle={new Date(r.created_at).toLocaleDateString()}
+            subtitle={r.id === highlightId ? "New reply to you" : new Date(r.created_at).toLocaleDateString()}
             thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
             duration={r.duration_seconds}
             onClick={() => goToReply(r.id)}
@@ -701,6 +774,7 @@ function ListRow({
   thumbSrc,
   duration,
   active,
+  highlight,
   onClick,
   onDelete,
   onReply,
@@ -711,15 +785,24 @@ function ListRow({
   thumbSrc: string;
   duration: number | null;
   active?: boolean;
+  highlight?: boolean;
   onClick: () => void;
   onDelete?: () => void;
   onReply?: () => void;
 }) {
+  const rowRef = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (highlight && rowRef.current) {
+      rowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlight]);
   return (
-    <li>
+    <li ref={rowRef}>
       <div
         className={`group flex items-center gap-3 p-2 rounded-2xl border transition ${
-          active
+          highlight
+            ? "border-[3px] border-primary ring-4 ring-primary/40 bg-primary/10 shadow-lg"
+            : active
             ? "border-[3px] border-red-500 ring-2 ring-red-500/50 bg-card"
             : "border-border bg-card hover:border-primary/60"
         }`}
