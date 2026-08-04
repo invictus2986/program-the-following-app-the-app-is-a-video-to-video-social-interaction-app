@@ -684,6 +684,40 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
         />
       )}
 
+      {promoteBranch && (
+        <li>
+          <div className="rounded-2xl border border-primary/40 bg-primary/5 p-2 flex flex-col gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-primary px-1">
+              Conversation thread · {chain.length} videos
+            </p>
+            <ul className="flex flex-col gap-2">
+              {chain.map((r, i) => (
+                <ListRow
+                  key={r.id}
+                  active={activeReply?.id === r.id}
+                  highlight={r.id === highlightId}
+                  title={`@${r.profiles?.username ?? "unknown"}`}
+                  subtitle={
+                    r.id === highlightId
+                      ? "New reply to you"
+                      : `Step ${i + 1} · ${new Date(r.created_at).toLocaleDateString()}`
+                  }
+                  thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
+                  duration={r.duration_seconds}
+                  onClick={() => goToReply(r.id)}
+                  onDelete={canManage ? () => onAskDelete(r) : undefined}
+                  onReply={
+                    user
+                      ? () => navigate({ to: "/record", search: { replyTo: video.id, parentReplyId: r.id } })
+                      : undefined
+                  }
+                />
+              ))}
+            </ul>
+          </div>
+        </li>
+      )}
+
       {responses.length === 0 ? (
         <li className="text-sm text-muted-foreground py-4">
           No responses to this {activeReply ? "reply" : "video"} yet.
@@ -693,8 +727,9 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
           <ListRow
             key={r.id}
             active={activeReply?.id === r.id}
+            highlight={r.id === highlightId}
             title={`@${r.profiles?.username ?? "unknown"}`}
-            subtitle={new Date(r.created_at).toLocaleDateString()}
+            subtitle={r.id === highlightId ? "New reply to you" : new Date(r.created_at).toLocaleDateString()}
             thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
             duration={r.duration_seconds}
             onClick={() => goToReply(r.id)}
