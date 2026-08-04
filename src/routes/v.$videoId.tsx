@@ -424,6 +424,7 @@ function WatchPage() {
               onAskDelete={setReplyToDelete}
               showAll={showAllResponses}
               setShowAll={setShowAllResponses}
+              highlightId={highlightParam ?? null}
             />
           )}
         </aside>
