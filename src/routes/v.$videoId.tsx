@@ -774,6 +774,7 @@ function ListRow({
   thumbSrc,
   duration,
   active,
+  highlight,
   onClick,
   onDelete,
   onReply,
@@ -784,15 +785,24 @@ function ListRow({
   thumbSrc: string;
   duration: number | null;
   active?: boolean;
+  highlight?: boolean;
   onClick: () => void;
   onDelete?: () => void;
   onReply?: () => void;
 }) {
+  const rowRef = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (highlight && rowRef.current) {
+      rowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlight]);
   return (
-    <li>
+    <li ref={rowRef}>
       <div
         className={`group flex items-center gap-3 p-2 rounded-2xl border transition ${
-          active
+          highlight
+            ? "border-[3px] border-primary ring-4 ring-primary/40 bg-primary/10 shadow-lg"
+            : active
             ? "border-[3px] border-red-500 ring-2 ring-red-500/50 bg-card"
             : "border-border bg-card hover:border-primary/60"
         }`}
