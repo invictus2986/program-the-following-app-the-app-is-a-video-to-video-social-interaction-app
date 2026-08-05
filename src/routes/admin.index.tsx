@@ -15,8 +15,10 @@ function AdminIndex() {
   useEffect(() => {
     (async () => {
       const [u, v, r, ur, a] = await Promise.all([
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("videos").select("*", { count: "exact", head: true }),
+        // Count on "id" rather than "*": IP columns are not readable by
+        // anon/authenticated, so a wildcard select is a permission error.
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("videos").select("id", { count: "exact", head: true }),
         permissions.has("view_reports")
           ? supabase.from("video_reports").select("*", { count: "exact", head: true })
           : Promise.resolve({ count: 0 }),

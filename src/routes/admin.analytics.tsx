@@ -54,16 +54,18 @@ function AdminAnalytics() {
 
       const head = (q: ReturnType<typeof supabase.from>) => q;
       const [users, videos, replies, likes, views, a24, a7, a30, nu7, nv7, top] = await Promise.all([
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("videos").select("*", { count: "exact", head: true }),
-        supabase.from("replies").select("*", { count: "exact", head: true }),
+        // Count on "id" rather than "*": IP columns are not readable by
+        // anon/authenticated, so a wildcard select is a permission error.
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("videos").select("id", { count: "exact", head: true }),
+        supabase.from("replies").select("id", { count: "exact", head: true }),
         supabase.from("likes").select("*", { count: "exact", head: true }),
         supabase.from("video_views").select("*", { count: "exact", head: true }),
         supabase.from("video_views").select("user_id", { count: "exact" }).gte("created_at", iso(day)).not("user_id", "is", null),
         supabase.from("video_views").select("user_id", { count: "exact" }).gte("created_at", iso(7 * day)).not("user_id", "is", null),
         supabase.from("video_views").select("user_id", { count: "exact" }).gte("created_at", iso(30 * day)).not("user_id", "is", null),
-        supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", iso(7 * day)),
-        supabase.from("videos").select("*", { count: "exact", head: true }).gte("created_at", iso(7 * day)),
+        supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", iso(7 * day)),
+        supabase.from("videos").select("id", { count: "exact", head: true }).gte("created_at", iso(7 * day)),
         supabase.from("videos").select("id,caption,views_count,likes_count").order("views_count", { ascending: false }).limit(10),
       ]);
       head;
