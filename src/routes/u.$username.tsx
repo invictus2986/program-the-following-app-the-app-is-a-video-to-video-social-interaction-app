@@ -139,7 +139,13 @@ function ProfilePage() {
     (async () => {
       setLoading(true);
       try {
-        const { data: p, error: profileError } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
+        // Explicit column list: IP columns (signup_ip/last_ip) are not readable
+        // by anon/authenticated, so `select("*")` would fail with a permission error.
+        const { data: p, error: profileError } = await supabase
+          .from("profiles")
+          .select("id,user_id,username,display_name,avatar_url,bio,created_at,updated_at,deleted_at")
+          .eq("username", username)
+          .maybeSingle();
         if (profileError) throw profileError;
         if (!p || cancelled) {
           setProfile(null);
