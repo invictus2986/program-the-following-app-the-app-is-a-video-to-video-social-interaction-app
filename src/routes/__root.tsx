@@ -82,7 +82,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "A video-only social app. Post a video, reply with a video. No comments. No typing." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "JAIFF — Video conversations" },
       { name: "twitter:description", content: "A video-only social app. Post a video, reply with a video. No comments. No typing." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c99dca15-cede-482e-a90d-527953b430eb/id-preview-0198f3a7--95e70c6b-2b91-448b-968e-1b6d2ed98367.lovable.app-1780665152517.png" },
