@@ -21,18 +21,12 @@ jobs:
 
       - name: Verify build output
         run: |
-          echo "=== dist ==="
-          ls -la dist/ || echo "MISSING"
-          echo "=== dist/server ==="
-          ls -la dist/server/ || echo "MISSING"
-          echo "=== dist/client ==="
-          ls -la dist/client/ || echo "MISSING"
-          echo "=== .output ==="
-          ls -la .output/ 2>/dev/null || echo "no .output"
-          echo "=== dist tree ==="
-          find dist -maxdepth 3 -type f 2>/dev/null | sort || true
-          echo "=== .output tree ==="
-          find .output -maxdepth 3 -type f 2>/dev/null | sort || true
+          echo "=== .output/public ==="
+          ls -la .output/public 2>/dev/null || echo "MISSING"
+          echo "=== .output/public/_worker.js ==="
+          ls -la .output/public/_worker.js 2>/dev/null || echo "MISSING"
+          echo "=== .output/public tree ==="
+          find .output/public -maxdepth 3 -type f 2>/dev/null | sort || true
           echo "=== .wrangler tree ==="
           find .wrangler -maxdepth 4 -type f 2>/dev/null | sort || true
 
