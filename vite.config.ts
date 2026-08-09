@@ -12,5 +12,11 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
-  nitro: true,
+  nitro: {
+    preset: "cloudflare-pages",
+    output: {
+      dir: ".output/public",
+      publicDir: ".output/public",
+    },
+  },
 });
