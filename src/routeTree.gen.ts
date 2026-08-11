@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RecordRouteImport } from './routes/record'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -52,6 +53,11 @@ const AuthRoute = AuthRouteImport.update({
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecordRoute = RecordRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
   '/notifications': typeof NotificationsRoute
+  '/privacy': typeof PrivacyRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
   '/admin/admins': typeof AdminAdminsRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
   '/notifications': typeof NotificationsRoute
+  '/privacy': typeof PrivacyRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
   '/admin/admins': typeof AdminAdminsRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
   '/notifications': typeof NotificationsRoute
+  '/privacy': typeof PrivacyRoute
   '/record': typeof RecordRoute
   '/search': typeof SearchRoute
   '/admin/admins': typeof AdminAdminsRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/auth'
     | '/notifications'
+    | '/privacy'
     | '/record'
     | '/search'
     | '/admin/admins'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/auth'
     | '/notifications'
+    | '/privacy'
     | '/record'
     | '/search'
     | '/admin/admins'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/auth'
     | '/notifications'
+    | '/privacy'
     | '/record'
     | '/search'
     | '/admin/admins'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   AnnouncementsRoute: typeof AnnouncementsRoute
   AuthRoute: typeof AuthRoute
   NotificationsRoute: typeof NotificationsRoute
+  PrivacyRoute: typeof PrivacyRoute
   RecordRoute: typeof RecordRoute
   SearchRoute: typeof SearchRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -300,6 +313,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/record': {
@@ -437,6 +457,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementsRoute: AnnouncementsRoute,
   AuthRoute: AuthRoute,
   NotificationsRoute: NotificationsRoute,
+  PrivacyRoute: PrivacyRoute,
   RecordRoute: RecordRoute,
   SearchRoute: SearchRoute,
   UUsernameRoute: UUsernameRoute,
