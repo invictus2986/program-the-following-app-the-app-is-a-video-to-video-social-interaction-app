@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export const Route = createFileRoute("/v/$videoId")({
   component: WatchPage,
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { reply?: string; highlight?: string } => ({
     reply: typeof search.reply === "string" ? (search.reply as string) : undefined,
     highlight: typeof search.highlight === "string" ? (search.highlight as string) : undefined,
   }),
