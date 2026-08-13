@@ -180,6 +180,7 @@ create policy "users delete own video files" on storage.objects
 for delete using (
   bucket_id = 'videos' and auth.uid()::text = (storage.foldername(name))[1]
 );
+
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'videos_user_id_fkey') THEN
     ALTER TABLE public.videos ADD CONSTRAINT videos_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(user_id) ON DELETE CASCADE;
@@ -190,7 +191,8 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'likes_video_id_fkey') THEN
     ALTER TABLE public.likes ADD CONSTRAINT likes_video_id_fkey FOREIGN KEY (video_id) REFERENCES public.videos(id) ON DELETE CASCADE;
   END IF;
-END $$;create table public.search_history (
+END $$;
+create table public.search_history (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null,
   tag text not null,
@@ -200,7 +202,8 @@ create index search_history_user_created_idx on public.search_history (user_id, 
 alter table public.search_history enable row level security;
 create policy "users read own search history" on public.search_history for select using (auth.uid() = user_id);
 create policy "users insert own search history" on public.search_history for insert with check (auth.uid() = user_id);
-create policy "users delete own search history" on public.search_history for delete using (auth.uid() = user_id);CREATE TABLE public.blocks (
+create policy "users delete own search history" on public.search_history for delete using (auth.uid() = user_id);
+CREATE TABLE public.blocks (
   blocker_id UUID NOT NULL,
   blocked_id UUID NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -223,7 +226,8 @@ ON public.blocks FOR DELETE
 USING (auth.uid() = blocker_id);
 
 CREATE INDEX idx_blocks_blocked ON public.blocks(blocked_id);
-CREATE INDEX idx_blocks_blocker ON public.blocks(blocker_id);CREATE TABLE public.video_reports (
+CREATE INDEX idx_blocks_blocker ON public.blocks(blocker_id);
+CREATE TABLE public.video_reports (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   video_id uuid NOT NULL,
   reporter_id uuid NOT NULL,
@@ -241,7 +245,8 @@ CREATE POLICY "users read own reports" ON public.video_reports
 FOR SELECT USING (auth.uid() = reporter_id);
 
 CREATE INDEX idx_video_reports_video ON public.video_reports(video_id);
-CREATE INDEX idx_video_reports_reporter ON public.video_reports(reporter_id);-- 1. Roles enum
+CREATE INDEX idx_video_reports_reporter ON public.video_reports(reporter_id);
+-- 1. Roles enum
 CREATE TYPE public.app_role AS ENUM ('super_admin', 'admin');
 
 -- 2. user_roles table
@@ -366,6 +371,7 @@ BEGIN
       ON CONFLICT DO NOTHING;
   END IF;
 END $$;
+
 -- =========================
 -- SOFT DELETES
 -- =========================
@@ -486,6 +492,7 @@ FOR EACH ROW EXECUTE FUNCTION public.notify_on_reply();
 
 -- Enable realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+
 CREATE OR REPLACE FUNCTION public.get_storage_stats()
 RETURNS TABLE (
   total_objects bigint,
@@ -527,12 +534,14 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_storage_stats() TO authenticated;
+
 ALTER TABLE public.announcements
   ADD COLUMN IF NOT EXISTS video_storage_path text,
   ADD COLUMN IF NOT EXISTS video_thumbnail_url text,
   ADD COLUMN IF NOT EXISTS video_duration_seconds integer;
 
 ALTER TABLE public.announcements ALTER COLUMN body DROP NOT NULL;
+
 
 CREATE TABLE public.user_reports (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -565,6 +574,7 @@ CREATE INDEX idx_user_reports_created_at ON public.user_reports (created_at DESC
 CREATE INDEX idx_user_reports_reported ON public.user_reports (reported_user_id);
 
 ALTER TABLE public.user_bans ADD COLUMN IF NOT EXISTS expires_at timestamptz;
+
 
 ALTER TABLE public.videos ADD COLUMN IF NOT EXISTS posted_ip inet;
 ALTER TABLE public.replies ADD COLUMN IF NOT EXISTS posted_ip inet;
@@ -644,6 +654,7 @@ begin
   return new;
 end; $$;
 
+
 -- Cascade: when a video is deleted, remove all its replies
 CREATE OR REPLACE FUNCTION public.cascade_delete_replies()
 RETURNS trigger
@@ -669,6 +680,7 @@ CREATE POLICY "admins delete any reply"
 ON public.replies
 FOR DELETE
 USING (public.has_permission(auth.uid(), 'manage_users'));
+
 
 -- Per-user activity analytics, admin gated
 CREATE OR REPLACE FUNCTION public.admin_user_analytics(_user_id uuid, _since timestamptz)
@@ -762,6 +774,7 @@ BEGIN
   FROM per_user;
 END;
 $$;
+
 -- Add priority columns
 ALTER TABLE public.video_reports ADD COLUMN priority integer NOT NULL DEFAULT 0;
 ALTER TABLE public.user_reports ADD COLUMN priority integer NOT NULL DEFAULT 0;
@@ -844,6 +857,7 @@ UPDATE public.user_reports SET priority = (
   SELECT COUNT(*) FROM public.user_reports ur2 WHERE ur2.reported_user_id = user_reports.reported_user_id
 );
 
+
 CREATE OR REPLACE FUNCTION public.admin_search_archived_videos(_email_query text DEFAULT NULL)
 RETURNS TABLE(
   id uuid,
@@ -888,6 +902,7 @@ BEGIN
   LIMIT 200;
 END;
 $$;
+
 
 -- Moderation log table
 CREATE TABLE public.moderation_log (
@@ -1030,11 +1045,13 @@ CREATE TRIGGER trg_log_account_delete
 AFTER UPDATE ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.log_account_delete();
 
+
 ALTER TABLE public.replies
   ADD COLUMN parent_reply_id uuid REFERENCES public.replies(id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS replies_parent_reply_id_idx ON public.replies(parent_reply_id);
 CREATE INDEX IF NOT EXISTS replies_video_id_idx ON public.replies(video_id);
+
 
 -- Restore Data API grants for all public tables.
 -- Authenticated users get full CRUD (RLS still enforces row-level rules).
@@ -1066,6 +1083,7 @@ GRANT SELECT ON public.follows TO anon;
 GRANT SELECT ON public.video_views TO anon;
 GRANT SELECT ON public.announcements TO anon;
 GRANT INSERT ON public.video_views TO anon;
+
 
 -- 1. Fix is_admin: only super_admin/admin roles count as admin
 CREATE OR REPLACE FUNCTION public.is_admin(_user_id uuid)
@@ -1110,6 +1128,7 @@ GRANT EXECUTE ON FUNCTION public.admin_platform_avg_session_seconds(timestamptz)
 GRANT EXECUTE ON FUNCTION public.admin_search_archived_videos(text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_storage_stats() TO authenticated;
 
+
 -- Re-grant helpers used inside RLS policies (must be executable by the calling role)
 GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.has_permission(uuid, text) TO anon, authenticated;
@@ -1132,6 +1151,7 @@ REVOKE EXECUTE ON FUNCTION public.log_video_archive() FROM anon, authenticated, 
 REVOKE EXECUTE ON FUNCTION public.log_video_delete() FROM anon, authenticated, public;
 REVOKE EXECUTE ON FUNCTION public.cascade_delete_replies() FROM anon, authenticated, public;
 REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon, authenticated, public;
+
 CREATE OR REPLACE FUNCTION public.notify_on_reply()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1158,7 +1178,8 @@ BEGIN
     VALUES (v_owner, NEW.user_id, 'reply_to_video', NEW.video_id, NEW.id);
   END IF;
   RETURN NEW;
-END; $function$;-- Column-level privileges are required here: RLS does not restrict which
+END; $function$;
+-- Column-level privileges are required here: RLS does not restrict which
 -- columns a role can read, so a table-wide GRANT SELECT exposes IP columns.
 -- A column-level REVOKE is a no-op while a table-level grant exists, so the
 -- table-level grant must be dropped first and re-granted per column.
