@@ -34,6 +34,26 @@ jobs:
           echo "=== .wrangler tree ==="
           find .wrangler -maxdepth 4 -type f 2>/dev/null | sort || true
 
+      - name: Verify Supabase project baked into bundle
+        run: |
+          OLD_REF="ahamqopyceizmfuslhnz"
+          NEW_REF="mgmrcwslvoovtafzditt"
+
+          if grep -rl "$OLD_REF" .output/public > /tmp/old-refs.txt 2>/dev/null && [ -s /tmp/old-refs.txt ]; then
+            echo "::error::Old Supabase project ref ($OLD_REF) found in the production bundle:"
+            cat /tmp/old-refs.txt
+            exit 1
+          fi
+          echo "OK: no reference to the old Supabase project."
+
+          if grep -rl "$NEW_REF" .output/public > /tmp/new-refs.txt 2>/dev/null && [ -s /tmp/new-refs.txt ]; then
+            echo "OK: new Supabase project ref ($NEW_REF) present in:"
+            cat /tmp/new-refs.txt
+          else
+            echo "::error::New Supabase project ref ($NEW_REF) is missing from the production bundle. Check the VITE_SUPABASE_* repository variables."
+            exit 1
+          fi
+
       - name: Deploy to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
