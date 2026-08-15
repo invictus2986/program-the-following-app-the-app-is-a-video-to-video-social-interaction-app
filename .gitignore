@@ -33,3 +33,8 @@ dist-ssr
 # Android signing keys
 android/keystore.properties
 android/keystore/
+
+# Local environment values (never commit)
+.env
+.env.*
+!.env.example
