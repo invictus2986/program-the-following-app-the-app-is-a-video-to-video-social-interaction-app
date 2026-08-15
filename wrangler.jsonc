@@ -5,6 +5,9 @@
   "vars": {
     "VITE_SUPABASE_URL": "https://mgmrcwslvoovtafzditt.supabase.co",
     "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ghCHk0sy0_O0xWt4TtRqaA_3QF0QRXa",
-    "VITE_SUPABASE_PROJECT_ID": "mgmrcwslvoovtafzditt"
+    "VITE_SUPABASE_PROJECT_ID": "mgmrcwslvoovtafzditt",
+    "SUPABASE_URL": "https://mgmrcwslvoovtafzditt.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ghCHk0sy0_O0xWt4TtRqaA_3QF0QRXa",
+    "SUPABASE_PROJECT_ID": "mgmrcwslvoovtafzditt"
   }
 }
