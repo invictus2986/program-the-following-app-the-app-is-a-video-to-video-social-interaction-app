@@ -68,6 +68,17 @@ function AdminLayout() {
     { to: "/admin/admins", label: "Admins", icon: UserCog, show: role === "super_admin" },
   ];
 
+  const requirement = ROUTE_REQUIREMENTS.find(
+    (r) => location.pathname === r.path || location.pathname.startsWith(r.path + "/"),
+  );
+  const allowed =
+    !requirement ||
+    (requirement.require === "super_admin"
+      ? role === "super_admin"
+      : permissions.has(requirement.require));
+
+
+
   return (
     <AppShell>
       <section className="px-4 pt-6 pb-16">
