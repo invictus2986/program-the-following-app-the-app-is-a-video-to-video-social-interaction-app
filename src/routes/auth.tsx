@@ -86,6 +86,7 @@ function AuthPage() {
         provider,
         options: {
           redirectTo: window.location.origin,
+          queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
         },
       });
       if (error) {
