@@ -843,16 +843,27 @@ CREATE POLICY "admins delete user reports" ON public.user_reports FOR DELETE
 -- user_roles
 CREATE POLICY "user_roles readable by self and admins" ON public.user_roles FOR SELECT
   USING (auth.uid() = user_id OR public.is_admin(auth.uid()));
-CREATE POLICY "super_admin manages roles" ON public.user_roles FOR ALL
-  USING (public.has_role(auth.uid(), 'super_admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'super_admin'));
+-- Super admins manage admins only; super_admin rows are immutable via the API
+-- (see rls-superadmin-protection.sql for the matching triggers).
+CREATE POLICY "super_admin inserts admin roles" ON public.user_roles FOR INSERT TO authenticated
+  WITH CHECK (public.has_role(auth.uid(), 'super_admin') AND role <> 'super_admin' AND NOT public.is_super_admin(user_id));
+CREATE POLICY "super_admin updates admin roles" ON public.user_roles FOR UPDATE TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin') AND role <> 'super_admin' AND NOT public.is_super_admin(user_id))
+  WITH CHECK (public.has_role(auth.uid(), 'super_admin') AND role <> 'super_admin' AND NOT public.is_super_admin(user_id));
+CREATE POLICY "super_admin deletes admin roles" ON public.user_roles FOR DELETE TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin') AND role <> 'super_admin');
 
 -- admin_permissions
 CREATE POLICY "admin_permissions readable by self and admins" ON public.admin_permissions FOR SELECT
   USING (auth.uid() = user_id OR public.is_admin(auth.uid()));
-CREATE POLICY "super_admin manages permissions" ON public.admin_permissions FOR ALL
-  USING (public.has_role(auth.uid(), 'super_admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'super_admin'));
+CREATE POLICY "super_admin inserts admin permissions" ON public.admin_permissions FOR INSERT TO authenticated
+  WITH CHECK (public.has_role(auth.uid(), 'super_admin') AND NOT public.is_super_admin(user_id));
+CREATE POLICY "super_admin updates admin permissions" ON public.admin_permissions FOR UPDATE TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin') AND NOT public.is_super_admin(user_id))
+  WITH CHECK (public.has_role(auth.uid(), 'super_admin') AND NOT public.is_super_admin(user_id));
+CREATE POLICY "super_admin deletes admin permissions" ON public.admin_permissions FOR DELETE TO authenticated
+  USING (public.has_role(auth.uid(), 'super_admin') AND NOT public.is_super_admin(user_id));
+
 
 -- announcements
 CREATE POLICY "announcements public read" ON public.announcements FOR SELECT USING (true);
