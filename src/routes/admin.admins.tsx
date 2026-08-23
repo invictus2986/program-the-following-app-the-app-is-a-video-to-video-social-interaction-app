@@ -98,7 +98,11 @@ function AdminAdmins() {
         <Input placeholder="Search username…" value={q} onChange={(e) => setQ(e.target.value)} />
         {searchResults.length > 0 && (
           <ul className="space-y-1">
-            {searchResults.map((u) => (
+            {searchResults
+              // Never offer to "promote" someone who already holds a role —
+              // super admins in particular must not be touched from here.
+              .filter((u) => !admins.some((a) => a.user_id === u.user_id))
+              .map((u) => (
               <li key={u.user_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
                 <span className="text-sm">@{u.username}</span>
                 <Button size="sm" variant="outline" onClick={() => promote(u.user_id)}>
@@ -108,6 +112,7 @@ function AdminAdmins() {
             ))}
           </ul>
         )}
+
       </div>
 
       <div className="space-y-3">
