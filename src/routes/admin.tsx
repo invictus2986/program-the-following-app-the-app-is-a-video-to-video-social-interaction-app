@@ -98,7 +98,18 @@ function AdminLayout() {
             );
           })}
         </nav>
-        <Outlet />
+        {allowed ? (
+          <Outlet />
+        ) : (
+          <div className="rounded-2xl border border-border p-6 text-center">
+            <Lock className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm font-medium">You don’t have access to this tool</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Ask a super admin to grant you the required permission.
+            </p>
+          </div>
+        )}
+
       </section>
     </AppShell>
   );
