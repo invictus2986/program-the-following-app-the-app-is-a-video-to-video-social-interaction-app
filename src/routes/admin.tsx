@@ -1,18 +1,40 @@
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
-import { useAdminRole } from "@/hooks/useAdminRole";
-import { Shield, Megaphone, Flag, BarChart3, Users, UserCog, ChevronLeft, HardDrive, UserX, Archive, ScrollText } from "lucide-react";
+import { useAdminRole, type Permission } from "@/hooks/useAdminRole";
+import { Shield, Megaphone, Flag, BarChart3, Users, UserCog, ChevronLeft, HardDrive, UserX, Archive, ScrollText, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
 });
 
+/**
+ * Every admin sub-route and what it requires. `"super_admin"` means the
+ * authenticated user must hold the super_admin role in public.user_roles;
+ * anything else is a permission flag from public.admin_permissions.
+ * Nav links are hidden AND the page body is gated, so an admin cannot reach
+ * a tool they were not granted by typing the URL. Supabase RLS remains the
+ * final authority — this only keeps the UI honest.
+ */
+const ROUTE_REQUIREMENTS: Array<{ path: string; require: Permission | "super_admin" }> = [
+  { path: "/admin/admins", require: "super_admin" },
+  { path: "/admin/announcements", require: "post_announcements" },
+  { path: "/admin/reports", require: "view_reports" },
+  { path: "/admin/user-reports", require: "view_reports" },
+  { path: "/admin/log", require: "view_reports" },
+  { path: "/admin/analytics", require: "view_analytics" },
+  { path: "/admin/storage", require: "view_analytics" },
+  { path: "/admin/users", require: "manage_users" },
+  { path: "/admin/archive", require: "manage_users" },
+];
+
 function AdminLayout() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, role, permissions, loading } = useAdminRole();
   const navigate = useNavigate();
+  const location = useLocation();
+
 
   useEffect(() => {
     if (authLoading || loading) return;
