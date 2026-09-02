@@ -15,7 +15,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -69,6 +69,17 @@ function AuthPage() {
         toast.success("Account created! Check your email to verify.");
         return;
       }
+
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        toast.success("Check your email for the password reset link.");
+        setMode("signin");
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       toast.success("Welcome back");
@@ -99,13 +110,26 @@ function AuthPage() {
     }
   };
 
+  const toggleMode = mode === "signin" ? "signup" : "signin";
+  const toggleLabel = mode === "signin"
+    ? "No account? Sign up"
+    : mode === "signup"
+    ? "Have an account? Sign in"
+    : "Back to sign in";
+
   return (
     <AppShell>
       <div className="max-w-md mx-auto px-4 py-16">
         <div className="rounded-3xl bg-card border border-border p-8 shadow-[var(--shadow-elev)]">
-          <h1 className="text-3xl font-display font-bold mb-2">{mode === "signin" ? "Welcome back" : "Join JAIFF"}</h1>
+          <h1 className="text-3xl font-display font-bold mb-2">
+            {mode === "signin" ? "Welcome back" : mode === "signup" ? "Join JAIFF" : "Reset password"}
+          </h1>
           <p className="text-muted-foreground text-sm mb-6">
-            {mode === "signin" ? "Sign in to post and reply with video." : "Pick a handle. The world will see it."}
+            {mode === "signin"
+              ? "Sign in to post and reply with video."
+              : mode === "signup"
+              ? "Pick a handle. The world will see it."
+              : "Enter your email and we’ll send you a reset link."}
           </p>
           <Button
             type="button"
@@ -145,20 +169,39 @@ function AuthPage() {
               <Label htmlFor="e">Email</Label>
               <Input id="e" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
-            <div>
-              <Label htmlFor="p">Password</Label>
-              <Input id="p" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-            </div>
+            {mode !== "forgot" && (
+              <div>
+                <Label htmlFor="p">Password</Label>
+                <Input id="p" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+              </div>
+            )}
+            {mode === "signin" && (
+              <div className="text-right -mt-2">
+                <button
+                  type="button"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                  onClick={() => setMode("forgot")}
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
             <Button type="submit" disabled={busy} className="w-full rounded-full font-semibold">
-              {busy ? "..." : mode === "signin" ? "Sign in" : "Create account"}
+              {busy
+                ? "..."
+                : mode === "signin"
+                ? "Sign in"
+                : mode === "signup"
+                ? "Create account"
+                : "Send reset link"}
             </Button>
           </form>
           <button
             type="button"
             className="mt-4 text-sm text-muted-foreground hover:text-foreground w-full text-center"
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            onClick={() => setMode(toggleMode)}
           >
-            {mode === "signin" ? "No account? Sign up" : "Have an account? Sign in"}
+            {toggleLabel}
           </button>
         </div>
       </div>
