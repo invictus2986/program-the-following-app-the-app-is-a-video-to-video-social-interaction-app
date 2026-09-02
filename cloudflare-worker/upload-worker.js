@@ -77,16 +77,104 @@ function assertOwnsKey(userId, key) {
   }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_DELETE_PAGES = 20; // safe per-invocation page budget
+
+/**
+ * Server-to-server bulk delete of everything under `${uid}/`.
+ * Requires the shared DELETE_SECRET; deliberately has NO CORS headers so it is
+ * not usable from a browser. The prefix is computed from the UID only — no
+ * caller-supplied prefix or key is ever honoured.
+ */
+async function handleDeleteAll(request, env) {
+  const provided = request.headers.get("x-delete-secret") || "";
+  const expected = env.DELETE_SECRET || "";
+  if (!expected || provided !== expected) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ complete: false, deleted: 0, failed: [], error: "Invalid JSON body" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const uid = typeof body?.uid === "string" ? body.uid.trim() : "";
+  if (!UUID_RE.test(uid)) {
+    return new Response(JSON.stringify({ complete: false, deleted: 0, failed: [], error: "Invalid uid" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const prefix = `${uid}/`;
+  let cursor = typeof body?.cursor === "string" && body.cursor ? body.cursor : undefined;
+  let deleted = 0;
+  const failed = [];
+
+  for (let page = 0; page < MAX_DELETE_PAGES; page++) {
+    let listing;
+    try {
+      listing = await env.JAIFF_VIDEOS.list({ prefix, cursor, limit: 1000 });
+    } catch (err) {
+      console.error("list failed", err);
+      return new Response(
+        JSON.stringify({ complete: false, deleted, failed, cursor, error: "List failed" }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // Defence in depth: only keys that really live under the computed prefix.
+    const keys = (listing.objects || []).map((o) => o.key).filter((k) => typeof k === "string" && k.startsWith(prefix));
+
+    for (const key of keys) {
+      try {
+        await env.JAIFF_VIDEOS.delete(key);
+        deleted++;
+      } catch (err) {
+        console.error("delete failed", err);
+        failed.push(key);
+      }
+    }
+
+    if (!listing.truncated) {
+      return new Response(
+        JSON.stringify({ complete: failed.length === 0, deleted, failed }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    cursor = listing.cursor;
+  }
+
+  // Page budget reached: hand a continuation cursor back to the trusted caller.
+  return new Response(JSON.stringify({ complete: false, deleted, failed, cursor }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+
+    // Server-to-server only: checked before CORS/preflight handling.
+    if (url.pathname === "/upload/all") {
+      if (request.method !== "DELETE") return new Response("Method not allowed", { status: 405 });
+      return handleDeleteAll(request, env);
+    }
+
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
-    const url = new URL(request.url);
     if (url.pathname !== "/upload") {
       return textErr("Not found", 404);
     }
+
 
     try {
       if (request.method === "POST") {
