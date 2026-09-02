@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { FollowListDialog, type FollowListMode } from "@/components/FollowListDialog";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { AdminUserAnalytics } from "@/components/AdminUserAnalytics";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 
 export const Route = createFileRoute("/u/$username")({
   component: ProfilePage,
@@ -58,6 +59,7 @@ function ProfilePage() {
   const [reportReason, setReportReason] = useState("inappropriate");
   const [reportDetails, setReportDetails] = useState("");
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [listMode, setListMode] = useState<FollowListMode>("followers");
 
@@ -455,6 +457,22 @@ function ProfilePage() {
               </ul>
             )}
           </div>
+          {isOwn && (
+            <div className="pt-2 border-t border-border">
+              <Label className="text-destructive">Danger zone</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Permanently delete your account, your videos and all of your activity.
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="mt-2"
+                onClick={() => { setEditOpen(false); setDeleteAccountOpen(true); }}
+              >
+                Delete account
+              </Button>
+            </div>
+          )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)} disabled={savingProfile}>Cancel</Button>
@@ -493,6 +511,9 @@ function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {isOwn && (
+        <DeleteAccountDialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen} />
+      )}
       {profile && (
         <FollowListDialog
           open={listOpen}
