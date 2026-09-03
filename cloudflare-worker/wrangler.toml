@@ -1,0 +1,11 @@
+name = "jaiff-upload-worker"
+main = "upload-worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+PUBLIC_BASE_URL = "https://videos.jaiff.com"
+SUPABASE_URL = "https://mgmrcwslvoovtafzditt.supabase.co"
+
+[[r2_buckets]]
+binding = "JAIFF_VIDEOS"
+bucket_name = "jaiff-videos"
