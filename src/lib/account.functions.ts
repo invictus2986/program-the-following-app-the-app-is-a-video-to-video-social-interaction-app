@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const R2_DELETE_ALL_ENDPOINT = "https://upload.jaiff.com/upload/all";
@@ -11,6 +12,12 @@ type WorkerResult = {
   cursor?: string;
   error?: string;
 };
+
+/** Raised when storage could not be reached / refused the request before deleting anything. */
+class StorageUnavailableError extends Error {}
+/** Raised after storage confirmed at least one deletion but could not finish. */
+class StoragePartialError extends Error {}
+
 
 /**
  * Permanently deletes the *authenticated caller's own* account.
