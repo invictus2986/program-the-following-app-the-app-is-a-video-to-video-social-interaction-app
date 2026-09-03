@@ -111,6 +111,27 @@ async function handleDeleteAll(request, env) {
     });
   }
 
+  // Defence in depth #2: the forwarded Supabase access token must belong to the
+  // very user whose prefix is being deleted. No CORS headers here — server-to-server only.
+  let tokenUserId;
+  try {
+    tokenUserId = await verifyBearerNoCors(request, env);
+  } catch (err) {
+    if (err instanceof Response) return err;
+    return new Response(JSON.stringify({ complete: false, deleted: 0, failed: [], error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (tokenUserId !== uid) {
+    return new Response(JSON.stringify({ complete: false, deleted: 0, failed: [], error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+
+
   const prefix = `${uid}/`;
   let cursor = typeof body?.cursor === "string" && body.cursor ? body.cursor : undefined;
   let deleted = 0;
