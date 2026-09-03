@@ -81,6 +81,29 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const MAX_DELETE_PAGES = 20; // safe per-invocation page budget
 
 /**
+ * Same Supabase token validation as verifyBearer, but without CORS headers so the
+ * bulk-delete endpoint stays strictly server-to-server.
+ */
+async function verifyBearerNoCors(request, env) {
+  const auth = request.headers.get("authorization") || "";
+  const m = auth.match(/^Bearer\s+(.+)$/i);
+  if (!m) throw new Response("Missing bearer token", { status: 401 });
+  const token = m[1].trim();
+
+  const res = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: env.SUPABASE_ANON_KEY,
+    },
+  });
+  if (!res.ok) throw new Response("Unauthorized", { status: 401 });
+  const user = await res.json();
+  if (!user?.id) throw new Response("Unauthorized", { status: 401 });
+  return user.id;
+}
+
+
+/**
  * Server-to-server bulk delete of everything under `${uid}/`.
  * Requires the shared DELETE_SECRET; deliberately has NO CORS headers so it is
  * not usable from a browser. The prefix is computed from the UID only — no
@@ -110,6 +133,27 @@ async function handleDeleteAll(request, env) {
       headers: { "Content-Type": "application/json" },
     });
   }
+
+  // Defence in depth #2: the forwarded Supabase access token must belong to the
+  // very user whose prefix is being deleted. No CORS headers here — server-to-server only.
+  let tokenUserId;
+  try {
+    tokenUserId = await verifyBearerNoCors(request, env);
+  } catch (err) {
+    if (err instanceof Response) return err;
+    return new Response(JSON.stringify({ complete: false, deleted: 0, failed: [], error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (tokenUserId !== uid) {
+    return new Response(JSON.stringify({ complete: false, deleted: 0, failed: [], error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+
 
   const prefix = `${uid}/`;
   let cursor = typeof body?.cursor === "string" && body.cursor ? body.cursor : undefined;

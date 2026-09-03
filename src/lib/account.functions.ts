@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const R2_DELETE_ALL_ENDPOINT = "https://upload.jaiff.com/upload/all";
@@ -11,6 +12,12 @@ type WorkerResult = {
   cursor?: string;
   error?: string;
 };
+
+/** Raised when storage could not be reached / refused the request before deleting anything. */
+class StorageUnavailableError extends Error {}
+/** Raised after storage confirmed at least one deletion but could not finish. */
+class StoragePartialError extends Error {}
+
 
 /**
  * Permanently deletes the *authenticated caller's own* account.
@@ -44,69 +51,102 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
       throw new Error("Account deletion is temporarily unavailable. Please try again later.");
     }
 
+    // The caller's own bearer token, forwarded to the Worker on every request
+    // (including cursor continuations) so the Worker can require sub === uid.
+    const accessToken = (getRequest().headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+    if (!accessToken) {
+      throw new Error("Your session could not be verified. Please sign in again and retry.");
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // ---- 4. Hide the account immediately (audit trigger fires). Idempotent. ----
-    await supabaseAdmin
+    const { error: softDeleteErr } = await supabaseAdmin
       .from("profiles")
       .update({ deleted_at: new Date().toISOString() })
       .eq("user_id", userId)
       .is("deleted_at", null);
+    if (softDeleteErr) {
+      console.error("deleteMyAccount: profile soft-delete failed", softDeleteErr);
+      throw new Error(
+        "Account deletion could not be started. Nothing has been deleted. Please retry account deletion.",
+      );
+    }
 
     // ---- 5/6. Delete every R2 object under `${uid}/`, following pagination. ----
     let cursor: string | undefined;
     let totalDeleted = 0;
-    for (let round = 0; round < MAX_R2_ROUNDS; round++) {
-      let result: WorkerResult;
-      try {
-        const res = await fetch(R2_DELETE_ALL_ENDPOINT, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "x-delete-secret": secret,
-          },
-          body: JSON.stringify({ uid: userId, ...(cursor ? { cursor } : {}) }),
-        });
-        if (!res.ok) {
-          throw new Error(`storage responded ${res.status}`);
+    try {
+      for (let round = 0; round < MAX_R2_ROUNDS; round++) {
+        let result: WorkerResult;
+        try {
+          const res = await fetch(R2_DELETE_ALL_ENDPOINT, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "x-delete-secret": secret,
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ uid: userId, ...(cursor ? { cursor } : {}) }),
+          });
+          if (!res.ok) {
+            const detail = `storage responded ${res.status}`;
+            // Endpoint missing / unauthorized / server error: nothing was deleted in this pass.
+            throw new StorageUnavailableError(detail);
+          }
+          result = (await res.json()) as WorkerResult;
+        } catch (err) {
+          console.error("deleteMyAccount: R2 cleanup failed", err);
+          // ---- 7. Never delete Auth after an incomplete storage pass. ----
+          if (err instanceof StorageUnavailableError && totalDeleted === 0) {
+            throw new StorageUnavailableError(
+              "Account deletion could not be started because the video storage service is unavailable. Nothing has been deleted. Please try again later.",
+            );
+          }
+          throw new StoragePartialError(
+            totalDeleted > 0
+              ? "Account deletion could not be completed while removing your videos. Some of your videos may already have been removed. Please retry account deletion."
+              : "Account deletion could not be completed while removing your videos. Please retry account deletion.",
+          );
         }
-        result = (await res.json()) as WorkerResult;
-      } catch (err) {
-        console.error("deleteMyAccount: R2 cleanup failed", err);
-        // ---- 7. Never delete Auth after an incomplete storage pass. ----
-        throw new Error(
-          "Account deletion could not be completed while removing your videos. Some data may already have been removed. Please retry account deletion.",
-        );
-      }
 
-      totalDeleted += result.deleted ?? 0;
+        totalDeleted += result.deleted ?? 0;
 
-      if (result.failed?.length || result.error) {
-        console.error("deleteMyAccount: R2 reported failures", {
-          failed: result.failed?.length ?? 0,
-          error: result.error,
-        });
-        throw new Error(
-          "Account deletion could not be completed because some of your videos could not be removed. Please retry account deletion.",
-        );
-      }
+        if (result.failed?.length || result.error) {
+          console.error("deleteMyAccount: R2 reported failures", {
+            failed: result.failed?.length ?? 0,
+            error: result.error,
+          });
+          throw new StoragePartialError(
+            totalDeleted > 0
+              ? "Account deletion could not be completed because some of your videos could not be removed. Some of your videos may already have been removed. Please retry account deletion."
+              : "Account deletion could not be completed because some of your videos could not be removed. Please retry account deletion.",
+          );
+        }
 
-      if (result.complete) {
-        cursor = undefined;
-        break;
+        if (result.complete) {
+          cursor = undefined;
+          break;
+        }
+        if (!result.cursor) {
+          throw new StoragePartialError(
+            "Account deletion could not be completed while removing your videos. Please retry account deletion.",
+          );
+        }
+        cursor = result.cursor;
+        if (round === MAX_R2_ROUNDS - 1) {
+          throw new StoragePartialError(
+            "Account deletion is taking longer than expected. Some of your videos may already have been removed — please retry account deletion.",
+          );
+        }
       }
-      if (!result.cursor) {
-        throw new Error(
-          "Account deletion could not be completed while removing your videos. Please retry account deletion.",
-        );
+    } catch (err) {
+      if (err instanceof StorageUnavailableError || err instanceof StoragePartialError) {
+        throw new Error(err.message);
       }
-      cursor = result.cursor;
-      if (round === MAX_R2_ROUNDS - 1) {
-        throw new Error(
-          "Account deletion is taking longer than expected. Some data has already been removed — please retry account deletion.",
-        );
-      }
+      throw err;
     }
+
 
     // ---- 5b. Legacy Supabase Storage objects live under the same `${uid}/` prefix. ----
     try {
