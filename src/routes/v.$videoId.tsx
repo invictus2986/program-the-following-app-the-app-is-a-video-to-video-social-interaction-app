@@ -628,6 +628,19 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
   const ids = new Set(replies.map((r) => r.id));
   const parentOf = (r: Reply) => (r.parent_reply_id && ids.has(r.parent_reply_id) ? r.parent_reply_id : null);
 
+  // Direct-reply count per node, recomputed from the current rows.
+  const directCounts = new Map<string | null, number>();
+  for (const r of replies) {
+    const key = parentOf(r);
+    directCounts.set(key, (directCounts.get(key) ?? 0) + 1);
+  }
+  const directLabel = (id: string | null) => {
+    const n = directCounts.get(id) ?? 0;
+    return `${n} ${n === 1 ? "reply" : "replies"}`;
+  };
+
+
+
   // Direct responses to the currently-watched item
   const currentId = activeReply?.id ?? null;
   let responses = replies
