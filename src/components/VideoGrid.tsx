@@ -87,6 +87,11 @@ function VideoCard({ v, onPlay }: { v: FeedVideo; onPlay?: () => void }) {
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+      {v.promoted_from_deleted_parent && (
+        <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-black/60 backdrop-blur text-[10px] font-semibold text-white">
+          Original deleted
+        </div>
+      )}
       <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 backdrop-blur text-[10px] font-semibold text-white">
         <Eye className="h-3 w-3" /> {formatCount(v.views_count)}
       </div>
