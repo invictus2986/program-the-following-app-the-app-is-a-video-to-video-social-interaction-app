@@ -478,7 +478,7 @@ function WatchPage() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {user && video.user_id === user.id
-                ? "This permanently removes the video and its replies. This action cannot be undone."
+                ? "This permanently removes only this video. Every reply to it is kept: each direct reply becomes its own video, with its own answers still attached. This action cannot be undone."
                 : "The video will be archived and hidden from the public, but remains searchable by administrators."}
             </AlertDialogDescription>
           </AlertDialogHeader>
