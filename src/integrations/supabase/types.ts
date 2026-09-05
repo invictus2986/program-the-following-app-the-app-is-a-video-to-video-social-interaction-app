@@ -252,6 +252,7 @@ export type Database = {
           created_at: string
           duration_seconds: number | null
           id: string
+          parent_deleted: boolean
           parent_reply_id: string | null
           posted_ip: unknown
           storage_path: string
@@ -262,6 +263,7 @@ export type Database = {
           created_at?: string
           duration_seconds?: number | null
           id?: string
+          parent_deleted?: boolean
           parent_reply_id?: string | null
           posted_ip?: unknown
           storage_path: string
@@ -272,6 +274,7 @@ export type Database = {
           created_at?: string
           duration_seconds?: number | null
           id?: string
+          parent_deleted?: boolean
           parent_reply_id?: string | null
           posted_ip?: unknown
           storage_path?: string
@@ -466,6 +469,8 @@ export type Database = {
           id: string
           likes_count: number
           posted_ip: unknown
+          promoted_at: string | null
+          promoted_from_deleted_parent: boolean
           reach_target: number
           replies_count: number
           storage_path: string
@@ -482,6 +487,8 @@ export type Database = {
           id?: string
           likes_count?: number
           posted_ip?: unknown
+          promoted_at?: string | null
+          promoted_from_deleted_parent?: boolean
           reach_target?: number
           replies_count?: number
           storage_path: string
@@ -498,6 +505,8 @@ export type Database = {
           id?: string
           likes_count?: number
           posted_ip?: unknown
+          promoted_at?: string | null
+          promoted_from_deleted_parent?: boolean
           reach_target?: number
           replies_count?: number
           storage_path?: string

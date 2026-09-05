@@ -41,6 +41,7 @@ type Video = {
   views_count: number;
   likes_count: number;
   replies_count: number;
+  promoted_from_deleted_parent?: boolean | null;
   profiles: Profile | null;
 };
 type Reply = {
@@ -50,6 +51,7 @@ type Reply = {
   duration_seconds: number | null;
   created_at: string;
   parent_reply_id: string | null;
+  parent_deleted?: boolean | null;
   profiles: Profile | null;
 };
 
@@ -125,7 +127,7 @@ function WatchPage() {
     try {
       const { data: rawVideo, error: videoError } = await supabase
         .from("videos")
-        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,thumbnail_url")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,thumbnail_url,promoted_from_deleted_parent")
         .eq("id", videoId)
         .maybeSingle();
 
@@ -150,7 +152,7 @@ function WatchPage() {
           .maybeSingle(),
         supabase
           .from("replies")
-          .select("id,user_id,storage_path,duration_seconds,created_at,parent_reply_id")
+          .select("id,user_id,storage_path,duration_seconds,created_at,parent_reply_id,parent_deleted")
           .eq("video_id", videoId)
           .order("created_at", { ascending: false }),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", rawVideo.user_id),
@@ -356,6 +358,16 @@ function WatchPage() {
               </Button>
             )}
           </div>
+          {video.promoted_from_deleted_parent && (
+            <p className="mt-4 rounded-2xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+              This video was originally a response to a video that has since been deleted. It now stands on its own, and its own replies are unchanged.
+            </p>
+          )}
+          {activeReply?.parent_deleted && (
+            <p className="mt-4 rounded-2xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+              The video this was replying to has been deleted, so it now sits one level higher in the conversation.
+            </p>
+          )}
           {video.caption && <p className="mt-4 text-foreground/90">{video.caption}</p>}
           {video.hashtags?.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -435,7 +447,7 @@ function WatchPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this comment video?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes only this reply video. The original video and its other replies are kept. This action cannot be undone.
+              This permanently removes only this reply video. Its direct answers are kept and move up one level; everything below them stays attached. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -478,7 +490,7 @@ function WatchPage() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {user && video.user_id === user.id
-                ? "This permanently removes the video and its replies. This action cannot be undone."
+                ? "This permanently removes only this video. Every reply to it is kept: each direct reply becomes its own video, with its own answers still attached. This action cannot be undone."
                 : "The video will be archived and hidden from the public, but remains searchable by administrators."}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -491,12 +503,12 @@ function WatchPage() {
                 try {
                   const isOwner = video.user_id === user.id;
                   if (isOwner) {
-                    // Owner permanently deletes their own video + reply files.
-                    const { data: replyRows } = await supabase
-                      .from("replies").select("storage_path").eq("video_id", video.id);
-                    const paths = [video.storage_path, ...((replyRows ?? []).map((r: any) => r.storage_path).filter(Boolean))];
-                    await supabase.storage.from("videos").remove(paths).catch(() => {});
+                    // Owner permanently deletes ONLY their own video file.
+                    // Replies survive: they are promoted to standalone videos,
+                    // so their files must never be removed here.
+                    await supabase.storage.from("videos").remove([video.storage_path]).catch(() => {});
                     const { error } = await supabase.from("videos").delete().eq("id", video.id);
+
                     if (error) throw error;
                     toast.success("Video deleted");
                   } else {
