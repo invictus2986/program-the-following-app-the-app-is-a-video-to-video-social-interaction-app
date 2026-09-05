@@ -491,12 +491,12 @@ function WatchPage() {
                 try {
                   const isOwner = video.user_id === user.id;
                   if (isOwner) {
-                    // Owner permanently deletes their own video + reply files.
-                    const { data: replyRows } = await supabase
-                      .from("replies").select("storage_path").eq("video_id", video.id);
-                    const paths = [video.storage_path, ...((replyRows ?? []).map((r: any) => r.storage_path).filter(Boolean))];
-                    await supabase.storage.from("videos").remove(paths).catch(() => {});
+                    // Owner permanently deletes ONLY their own video file.
+                    // Replies survive: they are promoted to standalone videos,
+                    // so their files must never be removed here.
+                    await supabase.storage.from("videos").remove([video.storage_path]).catch(() => {});
                     const { error } = await supabase.from("videos").delete().eq("id", video.id);
+
                     if (error) throw error;
                     toast.success("Video deleted");
                   } else {
