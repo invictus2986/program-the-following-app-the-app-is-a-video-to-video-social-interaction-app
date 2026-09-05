@@ -348,7 +348,7 @@ function ProfilePage() {
   return (
     <AppShell>
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="relative rounded-3xl bg-card border border-border p-6 flex items-center gap-5 shadow-[var(--shadow-elev)]">
+        <div className="relative rounded-3xl bg-card border border-border p-6 pt-12 sm:pt-6 flex flex-col sm:flex-row sm:items-center gap-5 shadow-[var(--shadow-elev)]">
           {user && profile && user.id === profile.user_id && (
             <button
               onClick={openEdit}
@@ -357,13 +357,13 @@ function ProfilePage() {
               <Pencil className="h-3.5 w-3.5" /> Edit profile
             </button>
           )}
-          <div className="h-20 w-20 rounded-full bg-[image:var(--gradient-mint)] grid place-items-center text-primary-foreground font-bold text-3xl">
+          <div className="h-20 w-20 shrink-0 rounded-full bg-[image:var(--gradient-mint)] grid place-items-center text-primary-foreground font-bold text-3xl">
             {(profile?.display_name || profile?.username || "?").slice(0, 1).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-3xl font-bold truncate">{profile?.display_name ?? profile?.username}</h1>
-            <p className="text-muted-foreground text-sm">@{profile?.username}</p>
-            <div className="flex gap-5 mt-2 text-sm">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold truncate">{profile?.display_name ?? profile?.username}</h1>
+            <p className="text-muted-foreground text-sm truncate">@{profile?.username}</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-sm">
               <button onClick={() => openList("followers")} className="hover:underline">
                 <strong>{formatCount(stats.followers)}</strong> <span className="text-muted-foreground">followers</span>
               </button>
@@ -372,10 +372,10 @@ function ProfilePage() {
               </button>
               <span><strong>{videos.length}</strong> <span className="text-muted-foreground">videos</span></span>
             </div>
-            {profile?.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
+            {profile?.bio && <p className="mt-2 text-sm break-words">{profile.bio}</p>}
           </div>
           {user && profile && user.id !== profile.user_id && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-row flex-wrap sm:flex-col gap-2 shrink-0 sm:w-auto">
               <Button onClick={toggleFollow} variant={following ? "outline" : "default"} className="rounded-full">
                 {following ? <><UserCheck className="h-4 w-4 mr-1" /> Following</> : <><UserPlus className="h-4 w-4 mr-1" /> Follow</>}
               </Button>
@@ -388,6 +388,7 @@ function ProfilePage() {
             </div>
           )}
         </div>
+
 
         {canViewAnalytics && profile && (
           <AdminUserAnalytics userId={profile.user_id} />

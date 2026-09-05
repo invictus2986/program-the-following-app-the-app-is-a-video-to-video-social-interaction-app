@@ -430,6 +430,17 @@ function WatchPage() {
               >
                 Reply to this reply
               </button>
+              {(canManage || (user && activeReply.user_id === user.id)) && (
+                <>
+                  {" · "}
+                  <button
+                    onClick={() => setReplyToDelete(activeReply)}
+                    className="text-destructive hover:underline"
+                  >
+                    Delete this reply
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -749,7 +760,7 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
                   thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
                   duration={r.duration_seconds}
                   onClick={() => goToReply(r.id)}
-                  onDelete={canManage ? () => onAskDelete(r) : undefined}
+                  onDelete={canManage || (user && r.user_id === user.id) ? () => onAskDelete(r) : undefined}
                   onReply={
                     user
                       ? () => navigate({ to: "/record", search: { replyTo: video.id, parentReplyId: r.id } })
@@ -777,7 +788,7 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
             thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
             duration={r.duration_seconds}
             onClick={() => goToReply(r.id)}
-            onDelete={canManage ? () => onAskDelete(r) : undefined}
+            onDelete={canManage || (user && r.user_id === user.id) ? () => onAskDelete(r) : undefined}
             onReply={
               user
                 ? () => navigate({ to: "/record", search: { replyTo: video.id, parentReplyId: r.id } })
