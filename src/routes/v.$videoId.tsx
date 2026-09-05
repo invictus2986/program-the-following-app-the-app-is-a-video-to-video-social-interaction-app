@@ -41,6 +41,7 @@ type Video = {
   views_count: number;
   likes_count: number;
   replies_count: number;
+  promoted_from_deleted_parent?: boolean | null;
   profiles: Profile | null;
 };
 type Reply = {
