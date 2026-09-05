@@ -436,11 +436,13 @@ function WatchPage() {
 
         <aside>
           <h3 className="font-display text-xl font-semibold mb-3 flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" /> {video.replies_count} {video.replies_count === 1 ? "reply" : "replies"}
+            <MessageSquare className="h-5 w-5 text-primary" /> {currentDirectReplies}{" "}
+            {currentDirectReplies === 1 ? "reply" : "replies"}
           </h3>
-          {replies.length === 0 ? (
+          {currentDirectReplies === 0 && replies.length === 0 ? (
             <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
           ) : (
+
             <ReplyList
               replies={replies}
               video={video}
