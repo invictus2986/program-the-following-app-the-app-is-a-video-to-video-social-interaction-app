@@ -435,7 +435,7 @@ function WatchPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this comment video?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes only this reply video. The original video and its other replies are kept. This action cannot be undone.
+              This permanently removes only this reply video. Its direct answers are kept and move up one level; everything below them stays attached. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
