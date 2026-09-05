@@ -277,6 +277,21 @@ function WatchPage() {
   const playingReply = !!activeReply;
   const src = playingReply ? publicUrl(activeReply!.storage_path) : publicUrl(video.storage_path);
 
+  // Direct-reply counts, derived live from the loaded conversation tree.
+  // Key = parent node id, or null for the original video (root).
+  // Always in sync with adds / deletes / reparenting, since it is recomputed
+  // from the current `replies` rows and never stored.
+  const loadedIds = new Set(replies.map((r) => r.id));
+  const effectiveParentId = (r: Reply) =>
+    r.parent_reply_id && loadedIds.has(r.parent_reply_id) ? r.parent_reply_id : null;
+  const directReplyCounts = new Map<string | null, number>();
+  for (const r of replies) {
+    const key = effectiveParentId(r);
+    directReplyCounts.set(key, (directReplyCounts.get(key) ?? 0) + 1);
+  }
+  const currentDirectReplies = directReplyCounts.get(activeReply?.id ?? null) ?? 0;
+
+
   return (
     <AppShell>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
@@ -421,11 +436,13 @@ function WatchPage() {
 
         <aside>
           <h3 className="font-display text-xl font-semibold mb-3 flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" /> {video.replies_count} {video.replies_count === 1 ? "reply" : "replies"}
+            <MessageSquare className="h-5 w-5 text-primary" /> {currentDirectReplies}{" "}
+            {currentDirectReplies === 1 ? "reply" : "replies"}
           </h3>
-          {replies.length === 0 ? (
+          {currentDirectReplies === 0 && replies.length === 0 ? (
             <p className="text-sm text-muted-foreground">No replies yet. Be the first to respond — with video.</p>
           ) : (
+
             <ReplyList
               replies={replies}
               video={video}
@@ -611,6 +628,19 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
   const ids = new Set(replies.map((r) => r.id));
   const parentOf = (r: Reply) => (r.parent_reply_id && ids.has(r.parent_reply_id) ? r.parent_reply_id : null);
 
+  // Direct-reply count per node, recomputed from the current rows.
+  const directCounts = new Map<string | null, number>();
+  for (const r of replies) {
+    const key = parentOf(r);
+    directCounts.set(key, (directCounts.get(key) ?? 0) + 1);
+  }
+  const directLabel = (id: string | null) => {
+    const n = directCounts.get(id) ?? 0;
+    return `${n} ${n === 1 ? "reply" : "replies"}`;
+  };
+
+
+
   // Direct responses to the currently-watched item
   const currentId = activeReply?.id ?? null;
   let responses = replies
@@ -679,7 +709,7 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
       {parentItem?.kind === "original" && (
         <ListRow
           title={`Original by @${video.profiles?.username ?? "unknown"}`}
-          subtitle={`${formatCount(video.likes_count)} likes · ${formatCount(video.views_count)} views`}
+          subtitle={`${directLabel(null)} · ${formatCount(video.likes_count)} likes · ${formatCount(video.views_count)} views`}
           badge="Replying to"
           thumbSrc={publicUrl(video.storage_path) + "#t=0.1"}
           duration={video.duration_seconds}
@@ -689,7 +719,7 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
       {parentItem?.kind === "reply" && (
         <ListRow
           title={`Reply by @${parentItem.reply.profiles?.username ?? "unknown"}`}
-          subtitle="Tap to watch the reply this is responding to"
+          subtitle={`${directLabel(parentItem.reply.id)} · Tap to watch the reply this is responding to`}
           badge="Replying to"
           thumbSrc={publicUrl(parentItem.reply.storage_path) + "#t=0.1"}
           duration={parentItem.reply.duration_seconds}
@@ -713,8 +743,8 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
                   title={`@${r.profiles?.username ?? "unknown"}`}
                   subtitle={
                     r.id === highlightId
-                      ? "New reply to you"
-                      : `Step ${chain.length - i} · ${new Date(r.created_at).toLocaleDateString()}`
+                      ? `${directLabel(r.id)} · New reply to you`
+                      : `${directLabel(r.id)} · Step ${chain.length - i} · ${new Date(r.created_at).toLocaleDateString()}`
                   }
                   thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
                   duration={r.duration_seconds}
@@ -743,7 +773,7 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
             active={activeReply?.id === r.id}
             highlight={r.id === highlightId}
             title={`@${r.profiles?.username ?? "unknown"}`}
-            subtitle={r.id === highlightId ? "New reply to you" : new Date(r.created_at).toLocaleDateString()}
+            subtitle={`${directLabel(r.id)} · ${r.id === highlightId ? "New reply to you" : new Date(r.created_at).toLocaleDateString()}`}
             thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
             duration={r.duration_seconds}
             onClick={() => goToReply(r.id)}
