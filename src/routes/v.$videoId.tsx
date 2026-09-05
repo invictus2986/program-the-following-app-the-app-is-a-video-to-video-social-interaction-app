@@ -719,7 +719,7 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
       {parentItem?.kind === "reply" && (
         <ListRow
           title={`Reply by @${parentItem.reply.profiles?.username ?? "unknown"}`}
-          subtitle="Tap to watch the reply this is responding to"
+          subtitle={`${directLabel(parentItem.reply.id)} · Tap to watch the reply this is responding to`}
           badge="Replying to"
           thumbSrc={publicUrl(parentItem.reply.storage_path) + "#t=0.1"}
           duration={parentItem.reply.duration_seconds}
