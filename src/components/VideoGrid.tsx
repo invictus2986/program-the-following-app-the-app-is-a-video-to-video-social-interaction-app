@@ -14,6 +14,7 @@ export type FeedVideo = {
   replies_count: number;
   created_at: string;
   thumbnail_url?: string | null;
+  promoted_from_deleted_parent?: boolean | null;
   profiles: { username: string; display_name: string | null; avatar_url: string | null } | null;
 };
 

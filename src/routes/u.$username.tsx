@@ -179,7 +179,7 @@ function ProfilePage() {
         const [{ data: v, error: videosError }, { data: r, error: repliesError }, { data: l, error: likesError }, { data: followersRows, error: followersError }, { data: followingRows, error: followingError }] = await Promise.all([
           supabase
             .from("videos")
-            .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,thumbnail_url")
+            .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,thumbnail_url,promoted_from_deleted_parent")
             .eq("user_id", p.user_id)
             .order("created_at", { ascending: false }),
           supabase
@@ -289,7 +289,7 @@ function ProfilePage() {
     const [{ data: parentRow }, { data: replyRows }] = await Promise.all([
       supabase
         .from("videos")
-        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,thumbnail_url")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,created_at,thumbnail_url,promoted_from_deleted_parent")
         .eq("id", parentId)
         .maybeSingle(),
       supabase
