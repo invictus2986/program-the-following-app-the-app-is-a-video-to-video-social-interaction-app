@@ -709,7 +709,7 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
       {parentItem?.kind === "original" && (
         <ListRow
           title={`Original by @${video.profiles?.username ?? "unknown"}`}
-          subtitle={`${formatCount(video.likes_count)} likes · ${formatCount(video.views_count)} views`}
+          subtitle={`${directLabel(null)} · ${formatCount(video.likes_count)} likes · ${formatCount(video.views_count)} views`}
           badge="Replying to"
           thumbSrc={publicUrl(video.storage_path) + "#t=0.1"}
           duration={video.duration_seconds}
