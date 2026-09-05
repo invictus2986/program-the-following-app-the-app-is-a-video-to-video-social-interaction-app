@@ -743,8 +743,8 @@ function ReplyList({ replies, video, activeReply, canManage, user, navigate, onA
                   title={`@${r.profiles?.username ?? "unknown"}`}
                   subtitle={
                     r.id === highlightId
-                      ? "New reply to you"
-                      : `Step ${chain.length - i} · ${new Date(r.created_at).toLocaleDateString()}`
+                      ? `${directLabel(r.id)} · New reply to you`
+                      : `${directLabel(r.id)} · Step ${chain.length - i} · ${new Date(r.created_at).toLocaleDateString()}`
                   }
                   thumbSrc={publicUrl(r.storage_path) + "#t=0.1"}
                   duration={r.duration_seconds}
