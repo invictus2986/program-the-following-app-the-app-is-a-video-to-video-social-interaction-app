@@ -363,6 +363,11 @@ function WatchPage() {
               This video was originally a response to a video that has since been deleted. It now stands on its own, and its own replies are unchanged.
             </p>
           )}
+          {activeReply?.parent_deleted && (
+            <p className="mt-4 rounded-2xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+              The video this was replying to has been deleted, so it now sits one level higher in the conversation.
+            </p>
+          )}
           {video.caption && <p className="mt-4 text-foreground/90">{video.caption}</p>}
           {video.hashtags?.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
