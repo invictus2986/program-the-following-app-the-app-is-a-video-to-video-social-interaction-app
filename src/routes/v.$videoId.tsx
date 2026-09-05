@@ -277,6 +277,21 @@ function WatchPage() {
   const playingReply = !!activeReply;
   const src = playingReply ? publicUrl(activeReply!.storage_path) : publicUrl(video.storage_path);
 
+  // Direct-reply counts, derived live from the loaded conversation tree.
+  // Key = parent node id, or null for the original video (root).
+  // Always in sync with adds / deletes / reparenting, since it is recomputed
+  // from the current `replies` rows and never stored.
+  const loadedIds = new Set(replies.map((r) => r.id));
+  const effectiveParentId = (r: Reply) =>
+    r.parent_reply_id && loadedIds.has(r.parent_reply_id) ? r.parent_reply_id : null;
+  const directReplyCounts = new Map<string | null, number>();
+  for (const r of replies) {
+    const key = effectiveParentId(r);
+    directReplyCounts.set(key, (directReplyCounts.get(key) ?? 0) + 1);
+  }
+  const currentDirectReplies = directReplyCounts.get(activeReply?.id ?? null) ?? 0;
+
+
   return (
     <AppShell>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
