@@ -51,6 +51,7 @@ type Reply = {
   duration_seconds: number | null;
   created_at: string;
   parent_reply_id: string | null;
+  parent_deleted?: boolean | null;
   profiles: Profile | null;
 };
 
@@ -126,7 +127,7 @@ function WatchPage() {
     try {
       const { data: rawVideo, error: videoError } = await supabase
         .from("videos")
-        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,thumbnail_url")
+        .select("id,user_id,storage_path,caption,hashtags,duration_seconds,views_count,likes_count,replies_count,thumbnail_url,promoted_from_deleted_parent")
         .eq("id", videoId)
         .maybeSingle();
 
@@ -151,7 +152,7 @@ function WatchPage() {
           .maybeSingle(),
         supabase
           .from("replies")
-          .select("id,user_id,storage_path,duration_seconds,created_at,parent_reply_id")
+          .select("id,user_id,storage_path,duration_seconds,created_at,parent_reply_id,parent_deleted")
           .eq("video_id", videoId)
           .order("created_at", { ascending: false }),
         supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", rawVideo.user_id),
@@ -357,6 +358,11 @@ function WatchPage() {
               </Button>
             )}
           </div>
+          {video.promoted_from_deleted_parent && (
+            <p className="mt-4 rounded-2xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+              This video was originally a response to a video that has since been deleted. It now stands on its own, and its own replies are unchanged.
+            </p>
+          )}
           {video.caption && <p className="mt-4 text-foreground/90">{video.caption}</p>}
           {video.hashtags?.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
