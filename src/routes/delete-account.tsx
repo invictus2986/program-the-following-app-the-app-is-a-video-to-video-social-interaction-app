@@ -58,21 +58,29 @@ function DeleteAccountPage() {
 
             <div className="mt-6">
               <Button
-                asChild
                 size="lg"
+                onClick={handleDeleteClick}
                 className="w-full rounded-full bg-destructive font-semibold text-destructive-foreground hover:bg-destructive/90"
               >
-                <Link to="/auth">
-                  <Trash2 className="h-4 w-4" />
-                  Delete My Jaiff Account
-                </Link>
+                <Trash2 className="h-4 w-4" />
+                Delete My Jaiff Account
               </Button>
             </div>
 
             <p className="mt-4 text-xs text-muted-foreground">
-              To delete your account, sign in to Jaiff using the button above, open your profile
-              settings, and choose the account deletion option. Account deletion permanently removes
-              your account and associated Jaiff data.
+              {profile?.username ? (
+                <>
+                  You are signed in. Click the button above to go to your profile settings and choose
+                  the account deletion option. Account deletion permanently removes your account and
+                  associated Jaiff data.
+                </>
+              ) : (
+                <>
+                  To delete your account, sign in to Jaiff using the button above, open your profile
+                  settings, and choose the account deletion option. Account deletion permanently removes
+                  your account and associated Jaiff data.
+                </>
+              )}
             </p>
           </section>
 
