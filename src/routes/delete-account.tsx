@@ -124,10 +124,10 @@ function DeleteAccountPage() {
               If you cannot access your account, you may request account deletion by contacting us
               at{" "}
               <a
-                href="mailto:podgorskiy.serge@gmail.com"
+                href="mailto:podgorskiy.serge@unapsetech.com"
                 className="text-primary underline underline-offset-4 hover:text-primary/80"
               >
-                podgorskiy.serge@gmail.com
+                podgorskiy.serge@unapsetech.com
               </a>
               .
             </p>
