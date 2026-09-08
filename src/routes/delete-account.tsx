@@ -34,15 +34,14 @@ function DeleteAccountPage() {
             <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
               Delete Your Jaiff Account
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Jaiff is operated by Unapse LLC.
-            </p>
+            <p className="text-sm text-muted-foreground">Jaiff is operated by Unapse LLC.</p>
           </header>
 
           <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-elev)]">
             <p className="text-[15px] leading-relaxed text-card-foreground">
-              You can permanently delete your Jaiff account and the data associated with it. Deletion
-              removes your profile, videos, replies, and other account-related information from Jaiff.
+              You can permanently delete your Jaiff account and the data associated with it.
+              Deletion removes your profile, videos, replies, and other account-related information
+              from Jaiff.
             </p>
 
             <div className="mt-6">
@@ -84,7 +83,10 @@ function DeleteAccountPage() {
             <p className="text-sm leading-relaxed text-muted-foreground">
               Certain records may be retained where necessary for security, fraud prevention,
               moderation, legal obligations, or regulatory compliance, consistent with Jaiff's{" "}
-              <Link to="/privacy" className="text-primary underline underline-offset-4 hover:text-primary/80">
+              <Link
+                to="/privacy"
+                className="text-primary underline underline-offset-4 hover:text-primary/80"
+              >
                 Privacy Policy
               </Link>
               .
@@ -97,7 +99,8 @@ function DeleteAccountPage() {
               Can't access your account?
             </h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              If you cannot access your account, you may request account deletion by contacting us at{" "}
+              If you cannot access your account, you may request account deletion by contacting us
+              at{" "}
               <a
                 href="mailto:podgorskiy.serge@gmail.com"
                 className="text-primary underline underline-offset-4 hover:text-primary/80"
@@ -113,7 +116,10 @@ function DeleteAccountPage() {
               <FileText className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
               <p className="text-sm leading-relaxed text-muted-foreground">
                 For more details on how Jaiff handles your data, please review our{" "}
-                <Link to="/privacy" className="text-primary underline underline-offset-4 hover:text-primary/80">
+                <Link
+                  to="/privacy"
+                  className="text-primary underline underline-offset-4 hover:text-primary/80"
+                >
                   Privacy Policy
                 </Link>
                 .
