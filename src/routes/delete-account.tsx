@@ -27,12 +27,14 @@ export const Route = createFileRoute("/delete-account")({
 });
 
 function DeleteAccountPage() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
 
   const handleDeleteClick = () => {
     if (profile?.username) {
       navigate({ to: "/u/$username", params: { username: profile.username } });
+    } else if (user) {
+      navigate({ to: "/" });
     } else {
       navigate({ to: "/auth" });
     }
