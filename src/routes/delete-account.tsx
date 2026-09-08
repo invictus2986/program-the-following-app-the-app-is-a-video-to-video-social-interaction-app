@@ -70,15 +70,15 @@ function DeleteAccountPage() {
             <p className="mt-4 text-xs text-muted-foreground">
               {profile?.username ? (
                 <>
-                  You are signed in. Click the button above to go to your profile settings and choose
-                  the account deletion option. Account deletion permanently removes your account and
-                  associated Jaiff data.
+                  You are signed in. Click the button above to go to your profile settings and
+                  choose the account deletion option. Account deletion permanently removes your
+                  account and associated Jaiff data.
                 </>
               ) : (
                 <>
                   To delete your account, sign in to Jaiff using the button above, open your profile
-                  settings, and choose the account deletion option. Account deletion permanently removes
-                  your account and associated Jaiff data.
+                  settings, and choose the account deletion option. Account deletion permanently
+                  removes your account and associated Jaiff data.
                 </>
               )}
             </p>
