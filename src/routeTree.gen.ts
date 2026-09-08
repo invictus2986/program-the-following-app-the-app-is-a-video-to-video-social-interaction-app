@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RecordRouteImport } from './routes/record'
@@ -49,6 +50,11 @@ const AnnouncementsRoute = AnnouncementsRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotificationsRoute = NotificationsRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/notifications': typeof NotificationsRoute
   '/privacy': typeof PrivacyRoute
   '/record': typeof RecordRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/notifications': typeof NotificationsRoute
   '/privacy': typeof PrivacyRoute
   '/record': typeof RecordRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/announcements': typeof AnnouncementsRoute
   '/auth': typeof AuthRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/notifications': typeof NotificationsRoute
   '/privacy': typeof PrivacyRoute
   '/record': typeof RecordRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/announcements'
     | '/auth'
+    | '/delete-account'
     | '/notifications'
     | '/privacy'
     | '/record'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/'
     | '/announcements'
     | '/auth'
+    | '/delete-account'
     | '/notifications'
     | '/privacy'
     | '/record'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/announcements'
     | '/auth'
+    | '/delete-account'
     | '/notifications'
     | '/privacy'
     | '/record'
@@ -282,6 +294,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AnnouncementsRoute: typeof AnnouncementsRoute
   AuthRoute: typeof AuthRoute
+  DeleteAccountRoute: typeof DeleteAccountRoute
   NotificationsRoute: typeof NotificationsRoute
   PrivacyRoute: typeof PrivacyRoute
   RecordRoute: typeof RecordRoute
@@ -319,6 +332,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notifications': {
@@ -476,6 +496,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AnnouncementsRoute: AnnouncementsRoute,
   AuthRoute: AuthRoute,
+  DeleteAccountRoute: DeleteAccountRoute,
   NotificationsRoute: NotificationsRoute,
   PrivacyRoute: PrivacyRoute,
   RecordRoute: RecordRoute,
