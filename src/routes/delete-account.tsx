@@ -27,6 +27,17 @@ export const Route = createFileRoute("/delete-account")({
 });
 
 function DeleteAccountPage() {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDeleteClick = () => {
+    if (profile?.username) {
+      navigate({ to: "/u/$username", params: { username: profile.username } });
+    } else {
+      navigate({ to: "/auth" });
+    }
+  };
+
   return (
     <AppShell>
       <main className="px-5 py-10 sm:py-14">
