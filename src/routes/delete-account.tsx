@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
 import { Trash2, Shield, Mail, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/delete-account")({
