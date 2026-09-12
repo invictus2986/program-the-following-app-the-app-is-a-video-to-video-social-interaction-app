@@ -475,7 +475,7 @@ function WatchPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this comment video?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes only this reply video. Its direct answers are kept and move up one level; everything below them stays attached. This action cannot be undone.
+              This permanently removes only this reply video and its file. Its direct answers are kept and move up one level; everything below them stays attached. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -487,11 +487,11 @@ function WatchPage() {
                 if (!replyToDelete) return;
                 setDeletingReply(true);
                 try {
-                  if (replyToDelete.storage_path) {
-                    await supabase.storage.from("videos").remove([replyToDelete.storage_path]).catch(() => {});
-                  }
                   const { error } = await supabase.from("replies").delete().eq("id", replyToDelete.id);
                   if (error) throw error;
+                  // Row is gone (children already moved up one level via trigger);
+                  // now remove ONLY this reply's own media file.
+                  await removeMedia(replyToDelete.storage_path, replyToDelete.user_id === user?.id);
                   setReplies((prev) => prev.filter((x) => x.id !== replyToDelete.id));
                   if (activeReply?.id === replyToDelete.id) setActiveReply(null);
                   toast.success("Comment video deleted");
