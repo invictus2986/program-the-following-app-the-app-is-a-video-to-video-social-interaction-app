@@ -20,10 +20,12 @@ function extractIp(): string | null {
 export const recordPostIp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({
-      videoId: z.string().uuid().optional(),
-      replyId: z.string().uuid().optional(),
-    }).parse(input),
+    z
+      .object({
+        videoId: z.string().uuid().optional(),
+        replyId: z.string().uuid().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     try {
@@ -31,10 +33,18 @@ export const recordPostIp = createServerFn({ method: "POST" })
       if (!ip) return { ok: false as const };
       const { userId } = context;
       if (data.videoId) {
-        await supabaseAdmin.from("videos").update({ posted_ip: ip }).eq("id", data.videoId).eq("user_id", userId);
+        await supabaseAdmin
+          .from("videos")
+          .update({ posted_ip: ip })
+          .eq("id", data.videoId)
+          .eq("user_id", userId);
       }
       if (data.replyId) {
-        await supabaseAdmin.from("replies").update({ posted_ip: ip }).eq("id", data.replyId).eq("user_id", userId);
+        await supabaseAdmin
+          .from("replies")
+          .update({ posted_ip: ip })
+          .eq("id", data.replyId)
+          .eq("user_id", userId);
       }
       await supabaseAdmin.from("profiles").update({ last_ip: ip }).eq("user_id", userId);
       return { ok: true as const };
@@ -50,7 +60,9 @@ export const getAdminUserInfo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: rows, error } = await supabase.rpc("admin_get_user_info", { _user_id: data.userId });
+    const { data: rows, error } = await supabase.rpc("admin_get_user_info", {
+      _user_id: data.userId,
+    });
     if (error) throw new Error(error.message);
     const row = rows?.[0] ?? null;
     if (!row) return null;
@@ -69,7 +81,9 @@ export const getAdminVideoInfo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ videoId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: rows, error } = await supabase.rpc("admin_get_video_info", { _video_id: data.videoId });
+    const { data: rows, error } = await supabase.rpc("admin_get_video_info", {
+      _video_id: data.videoId,
+    });
     if (error) throw new Error(error.message);
     const row = rows?.[0] ?? null;
     if (!row) return null;
@@ -87,12 +101,17 @@ export const getAdminVideoInfo = createServerFn({ method: "POST" })
 export const getAdminUserAnalytics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), days: z.number().int().min(1).max(365).default(30) }).parse(input),
+    z
+      .object({ userId: z.string().uuid(), days: z.number().int().min(1).max(365).default(30) })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const since = new Date(Date.now() - data.days * 24 * 60 * 60 * 1000).toISOString();
-    const { data: rows, error } = await supabase.rpc("admin_user_analytics", { _user_id: data.userId, _since: since });
+    const { data: rows, error } = await supabase.rpc("admin_user_analytics", {
+      _user_id: data.userId,
+      _since: since,
+    });
     if (error) throw new Error(error.message);
     const row = rows?.[0];
     if (!row) return null;
@@ -117,7 +136,9 @@ export const getAdminPlatformAvgTime = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const since = new Date(Date.now() - data.days * 24 * 60 * 60 * 1000).toISOString();
-    const { data: rows, error } = await supabase.rpc("admin_platform_avg_session_seconds", { _since: since });
+    const { data: rows, error } = await supabase.rpc("admin_platform_avg_session_seconds", {
+      _since: since,
+    });
     if (error) throw new Error(error.message);
     const row = rows?.[0];
     return {
