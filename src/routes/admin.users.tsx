@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteMediaObject as removeMedia } from "@/lib/r2";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,14 +46,14 @@ function AdminUsers() {
     load();
   };
   const deleteAllVideos = async (uid: string) => {
-    if (!confirm("Remove ALL videos by this user from public view? They will be archived.")) return;
-    const { error } = await supabase
-      .from("videos")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("user_id", uid)
-      .is("deleted_at", null);
+    if (!confirm("Permanently delete ALL videos by this user? Replies by other users are kept and move up one level. This cannot be undone.")) return;
+    const { data: rows } = await supabase.from("videos").select("id,storage_path").eq("user_id", uid);
+    const { error } = await supabase.from("videos").delete().eq("user_id", uid);
     if (error) { toast.error(error.message); return; }
-    toast.success("Videos archived");
+    for (const row of rows ?? []) {
+      await removeMedia(row.storage_path, false);
+    }
+    toast.success("Videos permanently deleted");
   };
   const deleteAccount = async (uid: string) => {
     if (!confirm("Delete this account? This soft-deletes the profile and removes all their videos. This cannot be undone.")) return;

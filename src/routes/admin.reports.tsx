@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteMediaObject as removeMedia } from "@/lib/r2";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, ExternalLink } from "lucide-react";
@@ -61,10 +62,12 @@ function AdminReports() {
   };
 
   const deleteVideo = async (videoId: string) => {
-    if (!confirm("Remove this video from public view? It will be archived and remain searchable by administrators.")) return;
-    const { error } = await supabase.from("videos").update({ deleted_at: new Date().toISOString() }).eq("id", videoId);
+    if (!confirm("Permanently delete this video? Its replies are kept and move up one level. This cannot be undone.")) return;
+    const { data: row } = await supabase.from("videos").select("storage_path,user_id").eq("id", videoId).maybeSingle();
+    const { error } = await supabase.from("videos").delete().eq("id", videoId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Video archived");
+    await removeMedia(row?.storage_path ?? null, false);
+    toast.success("Video permanently deleted");
     load();
   };
 

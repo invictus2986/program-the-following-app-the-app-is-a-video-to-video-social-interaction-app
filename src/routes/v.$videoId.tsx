@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { publicUrl, formatDuration, formatCount } from "@/lib/video";
+import { deleteMediaObject as removeMedia } from "@/lib/r2";
 import { Button } from "@/components/ui/button";
 import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag, ChevronDown, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
