@@ -513,13 +513,10 @@ function WatchPage() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {user && video.user_id === user.id ? "Delete this video?" : "Remove this video from public view?"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Delete this video permanently?</AlertDialogTitle>
             <AlertDialogDescription>
-              {user && video.user_id === user.id
-                ? "This permanently removes only this video. Every reply to it is kept: each direct reply becomes its own video, with its own answers still attached. This action cannot be undone."
-                : "The video will be archived and hidden from the public, but remains searchable by administrators."}
+              This permanently removes only this video and its file — nothing is archived. Every reply to it is kept: each
+              direct reply becomes its own video, with its own answers still attached. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -529,25 +526,13 @@ function WatchPage() {
                 if (!user) return;
                 setSubmitting(true);
                 try {
-                  const isOwner = video.user_id === user.id;
-                  if (isOwner) {
-                    // Owner permanently deletes ONLY their own video file.
-                    // Replies survive: they are promoted to standalone videos,
-                    // so their files must never be removed here.
-                    await supabase.storage.from("videos").remove([video.storage_path]).catch(() => {});
-                    const { error } = await supabase.from("videos").delete().eq("id", video.id);
-
-                    if (error) throw error;
-                    toast.success("Video deleted");
-                  } else {
-                    // Admin soft-deletes (archives) someone else's video.
-                    const { error } = await supabase
-                      .from("videos")
-                      .update({ deleted_at: new Date().toISOString() })
-                      .eq("id", video.id);
-                    if (error) throw error;
-                    toast.success("Video archived");
-                  }
+                  // Permanent delete for owners and moderators alike. Replies survive:
+                  // they are promoted to standalone videos, so only THIS video's own
+                  // file is removed.
+                  const { error } = await supabase.from("videos").delete().eq("id", video.id);
+                  if (error) throw error;
+                  await removeMedia(video.storage_path, video.user_id === user.id);
+                  toast.success("Video deleted");
                   navigate({ to: "/u/$username", params: { username: video.profiles?.username ?? "" } });
                 } catch (e: any) {
                   toast.error(e.message ?? "Failed to delete");
