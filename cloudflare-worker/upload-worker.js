@@ -201,6 +201,42 @@ async function handleDeleteAll(request, env) {
   });
 }
 
+/**
+ * Server-to-server deletion of ONE object, regardless of owner.
+ * Used by moderation; requires the shared DELETE_SECRET and has no CORS headers.
+ */
+async function handleDeleteObject(request, env) {
+  const provided = request.headers.get("x-delete-secret") || "";
+  const expected = env.DELETE_SECRET || "";
+  if (!expected || provided !== expected) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ ok: false, error: "Invalid JSON body" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const key = typeof body?.key === "string" ? body.key.replace(/^\/+/, "") : "";
+  if (!key || key.includes("..")) {
+    return new Response(JSON.stringify({ ok: false, error: "Invalid key" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  await env.JAIFF_VIDEOS.delete(key);
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -209,6 +245,12 @@ export default {
     if (url.pathname === "/upload/all") {
       if (request.method !== "DELETE") return new Response("Method not allowed", { status: 405 });
       return handleDeleteAll(request, env);
+    }
+
+    // Server-to-server only: moderator deletion of a single object (any owner).
+    if (url.pathname === "/upload/object") {
+      if (request.method !== "DELETE") return new Response("Method not allowed", { status: 405 });
+      return handleDeleteObject(request, env);
     }
 
     if (request.method === "OPTIONS") {

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { publicUrl, formatDuration, formatCount } from "@/lib/video";
+import { deleteMediaObject as removeMedia } from "@/lib/r2";
 import { Button } from "@/components/ui/button";
 import { Heart, Home, MessageSquare, Play, Repeat2, UserPlus, UserCheck, Trash2, Flag, ChevronDown, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -475,7 +476,7 @@ function WatchPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this comment video?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes only this reply video. Its direct answers are kept and move up one level; everything below them stays attached. This action cannot be undone.
+              This permanently removes only this reply video and its file. Its direct answers are kept and move up one level; everything below them stays attached. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -487,11 +488,11 @@ function WatchPage() {
                 if (!replyToDelete) return;
                 setDeletingReply(true);
                 try {
-                  if (replyToDelete.storage_path) {
-                    await supabase.storage.from("videos").remove([replyToDelete.storage_path]).catch(() => {});
-                  }
                   const { error } = await supabase.from("replies").delete().eq("id", replyToDelete.id);
                   if (error) throw error;
+                  // Row is gone (children already moved up one level via trigger);
+                  // now remove ONLY this reply's own media file.
+                  await removeMedia(replyToDelete.storage_path, replyToDelete.user_id === user?.id);
                   setReplies((prev) => prev.filter((x) => x.id !== replyToDelete.id));
                   if (activeReply?.id === replyToDelete.id) setActiveReply(null);
                   toast.success("Comment video deleted");
@@ -513,13 +514,10 @@ function WatchPage() {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {user && video.user_id === user.id ? "Delete this video?" : "Remove this video from public view?"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Delete this video permanently?</AlertDialogTitle>
             <AlertDialogDescription>
-              {user && video.user_id === user.id
-                ? "This permanently removes only this video. Every reply to it is kept: each direct reply becomes its own video, with its own answers still attached. This action cannot be undone."
-                : "The video will be archived and hidden from the public, but remains searchable by administrators."}
+              This permanently removes only this video and its file — nothing is archived. Every reply to it is kept: each
+              direct reply becomes its own video, with its own answers still attached. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -529,25 +527,13 @@ function WatchPage() {
                 if (!user) return;
                 setSubmitting(true);
                 try {
-                  const isOwner = video.user_id === user.id;
-                  if (isOwner) {
-                    // Owner permanently deletes ONLY their own video file.
-                    // Replies survive: they are promoted to standalone videos,
-                    // so their files must never be removed here.
-                    await supabase.storage.from("videos").remove([video.storage_path]).catch(() => {});
-                    const { error } = await supabase.from("videos").delete().eq("id", video.id);
-
-                    if (error) throw error;
-                    toast.success("Video deleted");
-                  } else {
-                    // Admin soft-deletes (archives) someone else's video.
-                    const { error } = await supabase
-                      .from("videos")
-                      .update({ deleted_at: new Date().toISOString() })
-                      .eq("id", video.id);
-                    if (error) throw error;
-                    toast.success("Video archived");
-                  }
+                  // Permanent delete for owners and moderators alike. Replies survive:
+                  // they are promoted to standalone videos, so only THIS video's own
+                  // file is removed.
+                  const { error } = await supabase.from("videos").delete().eq("id", video.id);
+                  if (error) throw error;
+                  await removeMedia(video.storage_path, video.user_id === user.id);
+                  toast.success("Video deleted");
                   navigate({ to: "/u/$username", params: { username: video.profiles?.username ?? "" } });
                 } catch (e: any) {
                   toast.error(e.message ?? "Failed to delete");
