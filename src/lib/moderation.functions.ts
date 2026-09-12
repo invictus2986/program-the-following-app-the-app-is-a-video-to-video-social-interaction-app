@@ -127,3 +127,39 @@ export const getAdminPlatformAvgTime = createServerFn({ method: "POST" })
       days: data.days,
     };
   });
+/**
+ * Admin-only: permanently deletes a single object from the R2 bucket.
+ * Used when a moderator removes someone else's video, since the browser-facing
+ * Worker route only allows a user to delete keys under their own prefix.
+ */
+export const adminDeleteR2Object = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ key: z.string().min(1).max(1024) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: allowed, error } = await supabase.rpc("has_permission", {
+      _user_id: userId,
+      _permission: "manage_users",
+    });
+    if (error) throw new Error(error.message);
+    if (!allowed) throw new Error("Forbidden");
+
+    const key = data.key.replace(/^\/+/, "");
+    if (key.includes("..")) throw new Error("Invalid key");
+
+    const secret = process.env["R2_DELETE_SECRET"];
+    if (!secret) return { ok: false as const, reason: "missing_secret" as const };
+
+    try {
+      const res = await fetch(`https://upload.jaiff.com/upload/object`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", "x-delete-secret": secret },
+        body: JSON.stringify({ key }),
+      });
+      if (!res.ok) return { ok: false as const, reason: `worker_${res.status}` as const };
+      return { ok: true as const };
+    } catch (err) {
+      console.error("adminDeleteR2Object failed:", err);
+      return { ok: false as const, reason: "network" as const };
+    }
+  });
