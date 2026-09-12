@@ -1,66 +1,53 @@
-# Admin & Analytics System
+# Permanent video deletion + preserved conversation pyramid
 
-## Roles
-- **super_admin** — you. Full power. Can promote/demote others, grant/revoke any permission, cannot be demoted.
-- **admin** — delegated. Has any subset of these permissions (you choose per-admin):
-  - `post_announcements` — create/delete official announcements
-  - `view_reports` — see all video reports filed by users
-  - `view_analytics` — see the analytics dashboard
-  - `manage_users` — ban/unban users, delete any video
-  - `manage_admins` — promote/demote other admins (super-admin only by default)
+## What exists today (inspection results)
 
-## Database
-New tables (all with strict RLS — only admins can read/write):
-- `app_role` enum: `super_admin`, `admin`
-- `user_roles` (user_id, role) — separate table per security best practice
-- `admin_permissions` (user_id, permission) — granular flags per admin
-- `announcements` (title, body, created_by, pinned, created_at)
-- `user_bans` (user_id, banned_by, reason, created_at)
-- `has_role(uuid, app_role)` and `has_permission(uuid, text)` security-definer functions
+**How reply relationships are stored**
+- Original videos live in table `videos`.
+- Replies live in a separate table `replies` with `video_id` (the conversation root video) and `parent_reply_id` (the reply it directly answers, `NULL` = direct reply to the root).
+- So "original vs reply" is decided purely by **which table the row lives in**, not by a flag.
 
-You'll be auto-seeded as super_admin on first login (via your existing user_id).
+**How the Videos / Replies archives are populated**
+- On a profile (`src/routes/u.$username.tsx`), the "videos" tab queries `videos` by `user_id`; the "responses" tab queries `replies` by `user_id`. Classification therefore follows the table automatically — nothing extra to maintain.
 
-## UI
+**The existing promotion system**
+- Two security-definer triggers already implement the pyramid rule:
+  - `trg_reparent_reply_children` (AFTER DELETE on `replies`): direct children get `parent_reply_id = OLD.parent_reply_id`, `parent_deleted = true`. Descendants untouched. → Case 1 correct.
+  - `trg_promote_replies_on_video_delete` (BEFORE DELETE on `videos`): each direct reply row is **moved** into `videos` keeping the same id / owner / file / created_at, its whole subtree is re-rooted to it, its direct children get `parent_reply_id = NULL`, and its reply row is removed. → Cases 2, 3, 4 already behave as specified, including the automatic move from Replies archive to Videos archive.
+- Verdict: the hierarchy rule is already implemented and does not need redesign.
 
-### For all users
-- **Announcement banner** at top of home feed — dismissible, shows latest pinned announcement
-- **/announcements** page — full list of past announcements
+**How deletion currently causes archiving**
+- Owner deleting their own video: hard `DELETE FROM videos` (permanent) — correct already.
+- Admin / super user deleting someone else's video: `UPDATE videos SET deleted_at = now()` — a **soft delete (archive)**, surfaced in `/admin/archive` with Restore + "Delete permanently". This is the behaviour requirement 1 asks to remove.
+- `videos.deleted_at` is also honoured by the RLS read policy, so archived rows stay visible to owner/admins.
 
-### For admins (link in profile dropdown, hidden for non-admins)
-- **/admin** — dashboard hub
-- **/admin/announcements** — create/edit/delete announcements *(if `post_announcements`)*
-- **/admin/reports** — table of all video reports with reporter, video, reason, details, "view video" + "delete video" actions *(if `view_reports`)*
-- **/admin/analytics** — metrics dashboard *(if `view_analytics`)*:
-  - Total users, total videos, total replies, total likes
-  - Active users (24h, 7d, 30d) — based on video_views
-  - Avg videos per user, avg replies per user
-  - Avg videos watched per session
-  - Top 10 most-viewed/liked videos
-  - New signups over time (chart)
-  - Recharts line + bar charts
-- **/admin/users** — list users with stats, ban/unban, delete videos *(if `manage_users`)*
-- **/admin/admins** — promote users to admin, toggle their permissions, demote *(super_admin only)*
+**R2 keys and R2 deletion**
+- New uploads store the **full public playback URL** in `videos.storage_path` / `replies.storage_path` (e.g. `https://videos.jaiff.com/<uid>/<file>`); legacy rows store a Supabase Storage path. `publicUrl()` in `src/lib/video.ts` branches on `https://`.
+- The Worker (`cloudflare-worker/upload-worker.js`) exposes `DELETE /upload?key=<key>` (requires the caller's Supabase bearer token, and enforces the key sits under the caller's own `<uid>/` prefix) and `DELETE /upload/all` (account deletion, shared `DELETE_SECRET`).
+- Current UI deletes **do not** call R2 at all — they call `supabase.storage.from("videos").remove(...)`, which is a no-op for R2 rows. Every deleted video today leaves an orphan object in `jaiff-videos`.
 
-### Server functions
-All admin actions go through `createServerFn` with `requireSupabaseAuth` + a role/permission check. Analytics queries run server-side with the user's auth (RLS enforced).
+## Proposed changes
 
-## Files to create
-- migration (tables, RLS, helper functions, seed your super_admin)
-- `src/lib/admin.functions.ts` — server fns for all admin ops
-- `src/routes/_admin.tsx` — guard layout (checks role, redirects if not admin)
-- `src/routes/_admin/admin.tsx` — dashboard hub
-- `src/routes/_admin/admin.announcements.tsx`
-- `src/routes/_admin/admin.reports.tsx`
-- `src/routes/_admin/admin.analytics.tsx`
-- `src/routes/_admin/admin.users.tsx`
-- `src/routes/_admin/admin.admins.tsx`
-- `src/routes/announcements.tsx` — public list
-- `src/components/AnnouncementBanner.tsx` — top-of-feed banner
-- `src/hooks/useAdminRole.ts` — current user's role + permissions
-- edits to `src/routes/index.tsx` (banner), `src/components/AppShell.tsx` (admin link in menu)
+### 1. Permanent deletion for super users / admins
+- `src/routes/v.$videoId.tsx`: replace the admin soft-delete branch with the same hard `DELETE FROM videos` used for owners, so the promotion trigger runs and no archived record remains.
+- `src/routes/admin.users.tsx` (and any other admin surface that sets `deleted_at`): switch to hard delete.
+- `/admin/archive` stays as a read-only cleanup tool for already-archived legacy rows (Restore removed is optional — I'll keep the page working, no redesign).
+- Optional follow-up migration (only on your say-so): hard-delete existing `deleted_at` rows so the archive empties.
 
-## Notes
-- Two open questions I'm defaulting on (tell me if you'd rather change):
-  - **Announcements appear as**: dismissible banner on home + dedicated `/announcements` page
-  - **Admin access**: link in profile menu (visible only to admins) + hidden `/admin` route
-- Your account will be seeded as super_admin automatically — tell me your username so the migration can target you (or I can seed the first user who visits `/admin` if you prefer)
+### 2. Delete the R2 object on every deletion
+- New helper `src/lib/r2.ts`: derives the object key from `storage_path` (strip the public base URL; skip legacy Supabase paths) and calls the Worker.
+- Owner deletions call `DELETE /upload?key=…` with the user's bearer token (already supported, ownership-checked).
+- Admin deletions of **someone else's** file cannot use that endpoint (the prefix check rejects it). Add a privileged path: a new server function in `src/lib/moderation.functions.ts` that verifies `has_permission(manage_users)` server-side and then calls a new Worker route `DELETE /upload/object?key=…` authenticated with the existing server-only `R2_DELETE_SECRET` / Worker `DELETE_SECRET`.
+- Deletion order: delete the DB row first (triggers run, children survive), then delete only the deleted row's own object. Children's files are never touched.
+
+### 3. Reply deletion
+- Same treatment: reply delete removes the row (children reparent via trigger) and deletes only that reply's own R2 object.
+
+### 4. No change to the pyramid logic
+- Triggers, foreign keys, `promoted_from_deleted_parent`, `parent_deleted`, counters, feeds, likes, notifications, upload flow and auth stay exactly as they are.
+
+## Known caveat to confirm
+When a reply is promoted into `videos`, the inserted row gets `caption = NULL`, `hashtags = {}`, and `views_count`/`likes_count` at 0 — because the `replies` table has no caption/hashtag/view/like columns to carry over. Id, owner, file, duration, created_at and the whole descendant subtree are preserved. Nothing is lost that was ever stored on a reply; I'd leave this as-is unless you want reply-level captions added.
+
+## Deployment note
+The Worker change (`/upload/object`) has to be deployed to Cloudflare by you; until then admin-side R2 cleanup will report a failure while the database-side deletion still succeeds correctly.
