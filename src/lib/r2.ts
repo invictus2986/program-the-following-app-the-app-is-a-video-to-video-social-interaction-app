@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { adminDeleteR2Object } from "@/lib/moderation.functions";
 
 const R2_UPLOAD_ENDPOINT = "https://upload.jaiff.com/upload";
 
@@ -66,7 +67,6 @@ export async function deleteMediaObject(
   const key = r2KeyFromStoragePath(storagePath);
   if (!key) return false;
   try {
-    const { adminDeleteR2Object } = await import("@/lib/moderation.functions");
     const res = await adminDeleteR2Object({ data: { key } });
     return !!res?.ok;
   } catch {
