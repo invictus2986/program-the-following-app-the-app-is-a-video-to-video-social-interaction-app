@@ -211,6 +211,12 @@ export default {
       return handleDeleteAll(request, env);
     }
 
+    // Server-to-server only: moderator deletion of a single object (any owner).
+    if (url.pathname === "/upload/object") {
+      if (request.method !== "DELETE") return new Response("Method not allowed", { status: 405 });
+      return handleDeleteObject(request, env);
+    }
+
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
