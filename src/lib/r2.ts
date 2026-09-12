@@ -51,3 +51,25 @@ export async function deleteOwnR2Object(storagePath: string | null | undefined):
     return false;
   }
 }
+
+/**
+ * Removes the media file for a row that has just been permanently deleted.
+ * Owners use their own bearer-authenticated Worker route; moderators removing
+ * someone else's file go through the privileged server function.
+ * Never throws — file cleanup must not fail an already-completed deletion.
+ */
+export async function deleteMediaObject(
+  storagePath: string | null | undefined,
+  isOwner: boolean,
+): Promise<boolean> {
+  if (isOwner) return deleteOwnR2Object(storagePath);
+  const key = r2KeyFromStoragePath(storagePath);
+  if (!key) return false;
+  try {
+    const { adminDeleteR2Object } = await import("@/lib/moderation.functions");
+    const res = await adminDeleteR2Object({ data: { key } });
+    return !!res?.ok;
+  } catch {
+    return false;
+  }
+}
